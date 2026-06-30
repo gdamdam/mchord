@@ -1,0 +1,19 @@
+{
+  "name": "mchord",
+  "short_name": "mchord",
+  "description": "Move through chords. Stay in flow.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#15110d",
+  "theme_color": "#15110d",
+  "icons": [
+    {
+      "src": "./mchord-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

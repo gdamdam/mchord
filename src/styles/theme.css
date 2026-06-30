@@ -1,0 +1,62 @@
+/*
+ * mchord theme tokens — an authored "analog dusk" identity: warm espresso
+ * surfaces lit by a harmonic accent language (amber = now, magenta-rose =
+ * queued/tense, jewel sage = stable). Deliberately not the default dark-slate +
+ * one-neon look. Consumed via var(--token).
+ */
+:root {
+  color-scheme: dark;
+
+  /* Type roles. Fraunces (warm display serif) for identity moments only; Space
+   * Grotesk for UI chrome; Space Mono for every musical readout (the
+   * instrument's "voice"). Self-hosted via @fontsource — no network fonts. */
+  --font-display: 'Fraunces Variable', 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Space Grotesk Variable', 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Surfaces — warm espresso, slightly graded by elevation. */
+  --bg: #14100c;
+  --bg-sunken: #0d0a07;
+  --panel: #1d1711;
+  --panel-raised: #271e16;
+  --line: #3a2d20;
+  --line-soft: #2c2218;
+
+  /* Text — warm cream, never pure white. */
+  --text: #f5ecdd;
+  --text-dim: #c4af93;
+  --text-faint: #8a7458;
+
+  /* Harmonic accent language. */
+  --accent: #f2aa3c; /* amber — active / now playing */
+  --accent-soft: #c1832e;
+  --accent-2: #db7a9c; /* magenta-rose — queued / harmonic motion */
+  --accent-3: #79b89a; /* jewel sage — stable / diatonic */
+  --danger: #e2664a;
+
+  /* Stability scale (diatonic → chromatic), reused for chord colouring. */
+  --stable: #79b89a;
+  --neutral: #e6ad48;
+  --tense: #db7a9c;
+
+  /* Geometry. */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --touch: 44px;
+  --gap: 12px;
+
+  /* Motion. */
+  --t-fast: 90ms;
+  --t-med: 170ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

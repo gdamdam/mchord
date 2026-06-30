@@ -1,0 +1,45 @@
+mchord
+Copyright (C) 2026 Giovanni Damiola
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See the LICENSE file for the full text.
+
+--------------------------------------------------------------------------------
+Derived code and attribution
+--------------------------------------------------------------------------------
+
+mchord is part of the *mpump* family of local-first browser instruments by the
+same author. All sibling projects are licensed AGPL-3.0-or-later, and the code
+reused here is reused under AGPL-3.0-or-later with attribution within the same
+author and suite. The following portions are derived from sibling projects:
+
+* Build tooling, the PWA service worker + precache strategy, and the
+  Vite / TypeScript / ESLint configuration patterns — derived from **mgrains**.
+
+* The Ableton Link bridge client and clock math (src/transport/link.ts and
+  related) — derived from **mdrone** / **mpump** (linkBridge.ts, linkClock.ts).
+
+* The Web MIDI router, note-ownership tracking, and MIDI message parsing
+  (src/midi/) — derived from **mpumpit**.
+
+* The defensive persistence layer and the share-link codec patterns
+  (src/persistence/, src/sharing/) — derived from **mgrains** and **mloop**.
+
+* The Web Audio sound engine (src/audio/) — derived from **mdrone** and
+  **mgrains**. Specifically: the master-bus chain blueprint, the gentle
+  glue-compressor settings + safe gain staging, the AnalyserNode output-meter
+  tap, the preset-change "duck" to mask reconfiguration artefacts, the
+  procedural reverb-IR generator, and the voice-pool / ADSR-VCA / click-free
+  AudioParam-ramp approach — from **mdrone** (src/engine/MasterBus.ts). The
+  module-scope singleton + `import.meta.hot` HMR-dispose lifecycle — from
+  **mdrone** (src/App.tsx). The AudioWorklet `?worker&url` + `addModule`
+  loading convention, the AudioWorkletProcessor ambient-type declarations, and
+  the AudioContext resume / iOS-interruption handling — from **mgrains**
+  (src/audio/AudioEngine.ts, src/audio/granular.worklet.ts). The mchord
+  look-ahead limiter worklet (src/audio/worklets/limiter.worklet.ts) is new.
+
+These derivations were confirmed by the suite lead. Because every source project
+is AGPL-3.0-or-later by the same author, the reuse is covered by that license;
+this NOTICE records the lineage for attribution and transparency.
