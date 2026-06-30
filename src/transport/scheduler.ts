@@ -45,6 +45,8 @@ export interface PlanState {
   motion: number
   direction: Direction
   seed: number
+  /** Number of leading slots to cycle; <= 0 means all of `steps`. */
+  loopLength: number
   /** ctx time at which slot 0 (the first played step) began. */
   startTime: number
 }
@@ -107,8 +109,11 @@ export function planWindow(
   fromTime: number,
   toTime: number,
 ): ScheduledNote[] {
-  const { steps, bpm, beatsPerBar, swing, rhythm, motion, direction, seed } = state
+  const { steps, bpm, beatsPerBar, swing, rhythm, motion, direction, seed, loopLength } = state
   if (!steps.length || toTime <= fromTime) return []
+
+  // The loop cycles the first `count` slots; the rest are parked (never played).
+  const count = Math.max(1, Math.min(loopLength > 0 ? loopLength : steps.length, steps.length))
 
   const out: ScheduledNote[] = []
   const spb = secondsPerBeat(bpm)
@@ -120,7 +125,7 @@ export function planWindow(
   // Safety bound: never loop forever on absurd inputs.
   const maxSlots = 100000
   while (n < maxSlots) {
-    const idx = slotOrderIndex(n, steps.length, direction, seed)
+    const idx = slotOrderIndex(n, count, direction, seed)
     const step = steps[idx]
     const durBars = step?.durationBars ?? 1
     const slotLen = secondsPerBar(bpm, beatsPerBar) * durBars
@@ -221,6 +226,8 @@ export class Scheduler {
   private motion = 0
   private direction: Direction = 'forward'
   private seed = 1
+  /** Slots to cycle; 0 = all of `steps`. */
+  private loopLength = 0
 
   /** ctx time slot 0 began. */
   private startTime = 0
@@ -272,6 +279,11 @@ export class Scheduler {
     this.motion = Math.max(0, Math.min(1, m))
   }
 
+  /** Number of leading slots to loop. 0 (or out of range) means all slots. */
+  setLoopLength(n: number): void {
+    this.loopLength = Math.max(0, Math.floor(n))
+  }
+
   get playing(): boolean {
     return this._playing
   }
@@ -306,7 +318,8 @@ export class Scheduler {
    * boundary and continues playing forward from there.
    */
   triggerSlot(index: number, quantize: 'beat' | 'bar' | 'off' = 'bar'): void {
-    if (index < 0 || index >= this.steps.length) return
+    // Only slots inside the loop can be jumped to; parked slots are ignored.
+    if (index < 0 || index >= this.count()) return
     const now = this.now()
     let at: number
     if (quantize === 'off') {
@@ -335,6 +348,13 @@ export class Scheduler {
 
   // -- internals ----------------------------------------------------------
 
+  /** Effective number of slots in the loop (0 when there are no steps). */
+  private count(): number {
+    if (this.steps.length === 0) return 0
+    const L = this.loopLength > 0 ? this.loopLength : this.steps.length
+    return Math.max(1, Math.min(L, this.steps.length))
+  }
+
   private planState(): PlanState {
     return {
       steps: this.steps,
@@ -345,6 +365,7 @@ export class Scheduler {
       motion: this.motion,
       direction: this.direction,
       seed: this.seed,
+      loopLength: this.loopLength,
       startTime: this.startTime,
     }
   }
@@ -352,11 +373,12 @@ export class Scheduler {
   /** Index of the currently-sounding played-slot ordinal, given a ctx time. */
   private slotNAt(t: number): number {
     if (!this.steps.length || t < this.startTime) return 0
+    const count = this.count()
     let slotStart = this.startTime
     let n = 0
     const maxSlots = 100000
     while (n < maxSlots) {
-      const idx = slotOrderIndex(n, this.steps.length, this.direction, this.seed)
+      const idx = slotOrderIndex(n, count, this.direction, this.seed)
       const durBars = this.steps[idx]?.durationBars ?? 1
       const slotEnd = slotStart + secondsPerBar(this.bpm, this.beatsPerBar) * durBars
       if (t < slotEnd) return n
@@ -404,10 +426,11 @@ export class Scheduler {
     // in the (deterministic) order whose slot === `index`, then shift startTime
     // back by the cumulative duration of the preceding ordinals so that ordinal
     // `found` lands exactly at `at` and play continues forward from there.
-    const maxSlots = this.steps.length * 4 + 8
+    const count = this.count()
+    const maxSlots = count * 4 + 8
     let found = 0
     for (let n = 0; n < maxSlots; n++) {
-      if (slotOrderIndex(n, this.steps.length, this.direction, this.seed) === index) {
+      if (slotOrderIndex(n, count, this.direction, this.seed) === index) {
         found = n
         break
       }
@@ -416,7 +439,7 @@ export class Scheduler {
     // startTime = at - thatCumulative so that ordinal `found` begins at `at`.
     let cumulative = 0
     for (let i = 0; i < found; i++) {
-      const idx = slotOrderIndex(i, this.steps.length, this.direction, this.seed)
+      const idx = slotOrderIndex(i, count, this.direction, this.seed)
       const durBars = this.steps[idx]?.durationBars ?? 1
       cumulative += secondsPerBar(this.bpm, this.beatsPerBar) * durBars
     }
@@ -432,7 +455,7 @@ export class Scheduler {
     if (n === this.lastReportedSlotN && this.pendingJumpUnchanged()) return
     this.lastReportedSlotN = n
     const index = this.steps.length
-      ? slotOrderIndex(n, this.steps.length, this.direction, this.seed)
+      ? slotOrderIndex(n, this.count(), this.direction, this.seed)
       : 0
     const queued = this.pendingJump ? this.pendingJump.index : null
     for (const cb of this.stepCbs) cb({ index, queued })

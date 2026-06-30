@@ -19,6 +19,7 @@ function richScene(): SceneState {
       { chord: { root: 2, family: 'dom9' }, durationBars: 2 },
       { chord: { root: 9, family: 'min6' }, durationBars: 0.5 },
     ],
+    loopLength: 6,
     voicingMode: 'wide',
     direction: 'pendulum',
     rhythm: 'arp-updown',

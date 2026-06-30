@@ -1,5 +1,9 @@
 import type { Direction, Mode, RhythmStyle, VoicingMode } from '../types'
 
+/** Box-drawing wordmark (spells "mchord"). Built via join so source indentation
+ *  never leaks into the leading spaces. Rendered in a box-drawing-capable mono. */
+export const WORDMARK_ASCII = ['    ┓      ┓', '┏┳┓┏┣┓┏┓┏┓┏┫', '┛┗┗┗┛┗┗┛┛ ┗┻'].join('\n')
+
 /** Chromatic labels for the key picker (sharp spelling; slots spell per-key). */
 export const ROOT_LABELS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
 

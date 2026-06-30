@@ -35,6 +35,9 @@ function expectValidScene(s: SceneState): void {
   }
   expect(Number.isFinite(s.seed)).toBe(true)
   expect(s.slots).toHaveLength(SLOT_COUNT)
+  expect(s.loopLength).toBeGreaterThanOrEqual(1)
+  expect(s.loopLength).toBeLessThanOrEqual(SLOT_COUNT)
+  expect(Number.isInteger(s.loopLength)).toBe(true)
   for (const slot of s.slots) {
     expect(SLOT_DURATIONS).toContain(slot.durationBars)
     if (slot.chord !== null) {
@@ -164,6 +167,14 @@ describe('sanitizeScene', () => {
   it('always stamps the current version', () => {
     expect(sanitizeScene({ version: 999 }).version).toBe(SCENE_VERSION)
   })
+
+  it('clamps loopLength to [1, SLOT_COUNT] and defaults when missing', () => {
+    expect(sanitizeScene({ loopLength: 99 }).loopLength).toBe(SLOT_COUNT)
+    expect(sanitizeScene({ loopLength: 0 }).loopLength).toBe(1)
+    expect(sanitizeScene({ loopLength: -5 }).loopLength).toBe(1)
+    expect(sanitizeScene({ loopLength: 3 }).loopLength).toBe(3)
+    expect(sanitizeScene({}).loopLength).toBe(createDefaultScene().loopLength)
+  })
 })
 
 describe('migrateScene', () => {
@@ -181,6 +192,12 @@ describe('migrateScene', () => {
     expect(out.mode).toBe('dorian')
     expect(out.bpm).toBe(128)
     expectValidScene(out)
+  })
+
+  it('migrates a v1 scene (no loopLength) to the full 8-slot loop', () => {
+    const out = migrateScene({ version: 1, bpm: 110 })
+    expect(out.version).toBe(SCENE_VERSION)
+    expect(out.loopLength).toBe(SLOT_COUNT)
   })
 
   it('migrates an explicit version 0', () => {

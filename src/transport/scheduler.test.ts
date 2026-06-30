@@ -18,10 +18,43 @@ function stateWith(over: Partial<PlanState>): PlanState {
     motion: 0,
     direction: 'forward',
     seed: 42,
+    loopLength: 0, // 0 = all slots
     startTime: 0,
     ...over,
   }
 }
+
+describe('planWindow — loop length', () => {
+  // Distinct single-note voicings so each slot is identifiable in the output.
+  const loopState = (over: Partial<PlanState>) =>
+    stateWith({
+      steps: [
+        { voicing: [60], durationBars: 1 },
+        { voicing: [62], durationBars: 1 },
+        { voicing: [64], durationBars: 1 },
+      ],
+      ...over,
+    })
+
+  it('cycles only the first N slots; slots beyond loopLength never play', () => {
+    // 4 bars at 2s/bar covers ordinals 0,1,2,3 → with loop=2: slots 0,1,0,1.
+    const notes = planWindow(loopState({ loopLength: 2 }), 0, 8)
+    const midis = new Set(notes.map((n) => n.midi))
+    expect(midis.has(60)).toBe(true)
+    expect(midis.has(62)).toBe(true)
+    expect(midis.has(64)).toBe(false) // slot 2 is parked
+  })
+
+  it('loopLength 0 (or >= slot count) plays every slot', () => {
+    const midis = new Set(planWindow(loopState({ loopLength: 0 }), 0, 6).map((n) => n.midi))
+    expect(midis.has(64)).toBe(true)
+  })
+
+  it('loopLength larger than the slot count is clamped to all slots', () => {
+    const midis = new Set(planWindow(loopState({ loopLength: 99 }), 0, 6).map((n) => n.midi))
+    expect(midis.has(64)).toBe(true)
+  })
+})
 
 describe('slotOrderIndex — directions', () => {
   it('forward', () => {

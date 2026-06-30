@@ -62,6 +62,16 @@ describe('sceneReducer', () => {
     expect(sceneReducer(s, { type: 'setMacro', macro: 'tension', value: -1 }).scene.macros.tension).toBe(0)
   })
 
+  it('setLoopLength clamps to [1, SLOT_COUNT] and is undoable', () => {
+    const s = createInitialState()
+    expect(sceneReducer(s, { type: 'setLoopLength', length: 99 }).scene.loopLength).toBe(SLOT_COUNT)
+    expect(sceneReducer(s, { type: 'setLoopLength', length: 0 }).scene.loopLength).toBe(1)
+    const a = sceneReducer(s, { type: 'setLoopLength', length: 3 })
+    expect(a.scene.loopLength).toBe(3)
+    expect(a.past).toHaveLength(1)
+    expect(sceneReducer(a, { type: 'undo' }).scene.loopLength).toBe(s.scene.loopLength)
+  })
+
   it('transposes the harmonic intent when the key root changes', () => {
     const s0 = createInitialState()
     const origRoots = s0.scene.slots.map((slot) => slot.chord?.root ?? null)

@@ -1,5 +1,5 @@
 /**
- * mchord master bus — voices → master gain → glue compressor → limiter worklet
+ * mchord master bus — voices → master gain → glue compressor → native limiter
  *                      → output trim → (analyser tap) → destination.
  *
  * Plus a parallel reverb send (procedural IR convolver) that voices feed via
@@ -10,8 +10,9 @@
  * settings, safe gain staging, the AnalyserNode meter tap, the preset-change
  * "duck" to mask reconfiguration artefacts, and the procedural cathedral-IR
  * generator. Simplified for mchord's needs (no EQ/width/tilt/bass-mono stack).
- * The look-ahead limiter is an AudioWorklet here rather than mdrone's native
- * DynamicsCompressor. See NOTICE.
+ * The master limiter is a native DynamicsCompressorNode (like mdrone): native
+ * code flushes denormals, avoiding the decaying-tail CPU spikes a JS worklet
+ * limiter caused. See NOTICE.
  */
 
 import { dbToGain } from './dsp'
@@ -26,10 +27,11 @@ export class MasterBus {
   private readonly glueMakeup: GainNode
   /** Sums dry + reverb return, then feeds the limiter. */
   private readonly preLimMixer: GainNode
-  /** Look-ahead limiter worklet (the real-time-critical DSP). */
-  private limiterNode: AudioWorkletNode | null = null
-  /** Fallback gain so the chain is wired even before the worklet loads. */
-  private readonly limiterFallback: GainNode
+  /** Native master limiter. Replaces the earlier JS AudioWorklet: native nodes
+   *  flush denormals, so decaying note/reverb tails don't trigger the per-sample
+   *  CPU spikes (→ audio-thread underruns → constant crackle) that an unguarded
+   *  JS process() loop produced. */
+  private readonly limiter: DynamicsCompressorNode
   /** User output trim. */
   private readonly outputTrim: GainNode
   /** Brief duck pulled down on preset change to mask reconfiguration. */
@@ -42,8 +44,6 @@ export class MasterBus {
   /** Parallel reverb send. */
   private readonly reverbConvolver: ConvolverNode
   private readonly reverbReturn: GainNode
-
-  private readonly limiterCeilingLin = dbToGain(-1) // -1 dBFS ceiling
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx
@@ -65,8 +65,13 @@ export class MasterBus {
     this.preLimMixer = ctx.createGain()
     this.preLimMixer.gain.value = 1
 
-    this.limiterFallback = ctx.createGain()
-    this.limiterFallback.gain.value = 1
+    // Brick-wall-ish limiter: low threshold, high ratio, fast attack.
+    this.limiter = ctx.createDynamicsCompressor()
+    this.limiter.threshold.value = -2
+    this.limiter.knee.value = 0
+    this.limiter.ratio.value = 20
+    this.limiter.attack.value = 0.002
+    this.limiter.release.value = 0.12
 
     this.outputTrim = ctx.createGain()
     this.outputTrim.gain.value = 0.9
@@ -80,24 +85,22 @@ export class MasterBus {
 
     // Parallel reverb — procedural IR; silent until a voice sends to it.
     this.reverbConvolver = ctx.createConvolver()
-    this.reverbConvolver.buffer = MasterBus.makeReverbIR(ctx, 2.4)
+    this.reverbConvolver.buffer = MasterBus.makeReverbIR(ctx, 1.8)
     this.reverbReturn = ctx.createGain()
     this.reverbReturn.gain.value = dbToGain(-3)
 
-    // Wire the static chain. The limiter worklet is spliced in front of
-    // outputTrim once loaded (see attachLimiter); until then preLimMixer →
-    // limiterFallback → outputTrim keeps audio flowing.
+    // Wire the static master chain.
     this.masterGain.connect(this.glueComp)
     this.glueComp.connect(this.glueMakeup)
     this.glueMakeup.connect(this.preLimMixer)
 
-    // Reverb send tap off the (post-glue) signal, return summed pre-limiter.
-    this.glueMakeup.connect(this.reverbConvolver)
+    // Parallel reverb: fed only by per-voice sends (getReverbInput) — no extra
+    // full-bus tap — and returned pre-limiter so the tail stays peak-safe.
     this.reverbConvolver.connect(this.reverbReturn)
     this.reverbReturn.connect(this.preLimMixer)
 
-    this.preLimMixer.connect(this.limiterFallback)
-    this.limiterFallback.connect(this.outputTrim)
+    this.preLimMixer.connect(this.limiter)
+    this.limiter.connect(this.outputTrim)
     this.outputTrim.connect(this.analyser)
     this.analyser.connect(this.presetDuck)
     this.presetDuck.connect(ctx.destination)
@@ -112,29 +115,6 @@ export class MasterBus {
    *  parallel). Voices use their per-voice reverbSend level on a send gain. */
   getReverbInput(): ConvolverNode {
     return this.reverbConvolver
-  }
-
-  /**
-   * Splice the loaded limiter worklet in front of outputTrim, replacing the
-   * passthrough fallback. Idempotent. Ceiling/release configured to match the
-   * gain-staging target (-1 dBFS, 100 ms release).
-   */
-  attachLimiter(node: AudioWorkletNode): void {
-    if (this.limiterNode) return
-    this.limiterNode = node
-    const c = node.parameters.get('ceiling')
-    const r = node.parameters.get('release')
-    const e = node.parameters.get('enabled')
-    if (c) c.value = this.limiterCeilingLin
-    if (r) r.value = 0.1
-    if (e) e.value = 1
-    try {
-      this.preLimMixer.disconnect(this.limiterFallback)
-    } catch {
-      /* ok */
-    }
-    this.preLimMixer.connect(node)
-    node.connect(this.outputTrim)
   }
 
   /** Master output trim (user volume), 0..~1.2, click-free. */
@@ -176,7 +156,7 @@ export class MasterBus {
       /* ok */
     }
     try {
-      this.limiterNode?.disconnect()
+      this.limiter.disconnect()
     } catch {
       /* ok */
     }

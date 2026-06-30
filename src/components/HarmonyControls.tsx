@@ -4,6 +4,7 @@ import {
   MODES,
   PRESET_IDS,
   RHYTHM_STYLES,
+  SLOT_COUNT,
   VOICING_MODES,
   type Direction,
   type Mode,
@@ -31,6 +32,7 @@ interface HarmonyControlsProps {
   direction: Direction
   preset: PresetId
   swing: number
+  loopLength: number
   onKey: (root: PitchClass) => void
   onMode: (mode: Mode) => void
   onVoicing: (mode: VoicingMode) => void
@@ -38,6 +40,7 @@ interface HarmonyControlsProps {
   onDirection: (dir: Direction) => void
   onPreset: (id: PresetId) => void
   onSwing: (swing: number) => void
+  onLoopLength: (length: number) => void
 }
 
 export function HarmonyControls(props: HarmonyControlsProps) {
@@ -82,6 +85,15 @@ export function HarmonyControls(props: HarmonyControlsProps) {
           value={props.direction}
           onChange={props.onDirection}
           options={DIRECTIONS.map((d) => ({ value: d, label: DIRECTION_LABELS[d] }))}
+        />
+        <Select
+          label="Loop"
+          value={String(props.loopLength)}
+          onChange={(v) => props.onLoopLength(Number(v))}
+          options={Array.from({ length: SLOT_COUNT }, (_, i) => ({
+            value: String(i + 1),
+            label: `${i + 1} ${i === 0 ? 'slot' : 'slots'}`,
+          }))}
         />
         <div className="controls__swing">
           <Slider

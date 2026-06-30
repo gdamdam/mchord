@@ -4,16 +4,14 @@
  * Implements the shared `NoteSink` contract (types.ts): the transport/scheduler
  * broadcasts voiced notes to this engine (and to MIDI out) at sample-accurate
  * AudioContext times. Voices are allocated from a pool of native Web Audio node
- * graphs; the summed output runs through the MasterBus (glue comp → look-ahead
- * limiter worklet → output trim → analyser → destination).
+ * graphs; the summed output runs through the MasterBus (glue comp → native
+ * limiter → output trim → analyser → destination).
  *
  * The module-scope singleton + HMR-dispose lifecycle is adapted from
- * mdrone/src/App.tsx (AGPL-3.0-or-later). The worklet `?worker&url` + addModule
- * loading convention and the resume/interruption handling are adapted from
- * mgrains/src/audio/AudioEngine.ts (AGPL-3.0-or-later). See NOTICE.
+ * mdrone/src/App.tsx (AGPL-3.0-or-later). The resume/interruption handling is
+ * adapted from mgrains/src/audio/AudioEngine.ts (AGPL-3.0-or-later). See NOTICE.
  */
 
-import limiterWorkletUrl from './worklets/limiter.worklet.ts?worker&url'
 import type { Midi, NoteSink, PresetId, MacroValues, VoicedNote } from '../types'
 import { MasterBus } from './MasterBus'
 import { Voice } from './Voice'
@@ -33,7 +31,6 @@ export class AudioEngine implements NoteSink {
   private ctx: AudioContext | null = null
   private bus: MasterBus | null = null
   private voices: Voice[] = []
-  private limiterLoaded = false
   /** Monotonic note counter — voice age for stealing (oldest first). */
   private noteCounter = 0
   /** In-flight start(), so concurrent callers coalesce onto one context. */
@@ -62,7 +59,7 @@ export class AudioEngine implements NoteSink {
   // ---------------------------------------------------------------------------
 
   get ready(): boolean {
-    return this.ctx !== null && this.ctx.state === 'running' && this.limiterLoaded
+    return this.ctx !== null && this.ctx.state === 'running'
   }
 
   /** Create/resume the context, load the limiter worklet, build the master
@@ -99,23 +96,6 @@ export class AudioEngine implements NoteSink {
     this.voices = []
     for (let i = 0; i < VOICE_POOL_SIZE; i++) {
       this.voices.push(new Voice(ctx, this.resolved, bus.getInput(), bus.getReverbInput()))
-    }
-
-    // Load + splice the limiter worklet. If it fails, the MasterBus fallback
-    // gain keeps audio flowing (un-limited but functional).
-    try {
-      await ctx.audioWorklet.addModule(limiterWorkletUrl)
-      const node = new AudioWorkletNode(ctx, 'mchord-limiter', {
-        numberOfInputs: 1,
-        numberOfOutputs: 1,
-        outputChannelCount: [2],
-        channelCount: 2,
-        channelCountMode: 'explicit',
-      })
-      bus.attachLimiter(node)
-      this.limiterLoaded = true
-    } catch {
-      this.limiterLoaded = false
     }
 
     // Auto-resume listeners for iOS interruptions / tab switches.
@@ -251,7 +231,6 @@ export class AudioEngine implements NoteSink {
     this.bus = null
     const ctx = this.ctx
     this.ctx = null
-    this.limiterLoaded = false
     void ctx?.close().catch(() => {
       /* already closed */
     })

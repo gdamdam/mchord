@@ -5,6 +5,8 @@ interface ChordSlotsProps {
   slots: Slot[]
   keyRoot: PitchClass
   mode: Mode
+  /** Slots at index >= loopLength are "parked": shown dimmed, not played. */
+  loopLength: number
   selectedSlot: number
   activeSlot: number | null
   queuedSlot: number | null
@@ -31,6 +33,7 @@ export function ChordSlots({
   slots,
   keyRoot,
   mode,
+  loopLength,
   selectedSlot,
   activeSlot,
   queuedSlot,
@@ -43,11 +46,13 @@ export function ChordSlots({
     <section className="slots" aria-label="Chord progression">
       {slots.map((slot, i) => {
         const label = slot.chord ? chordLabel(slot.chord, keyRoot, mode) : null
+        const parked = i >= loopLength
         const state = [
           i === selectedSlot ? 'is-selected' : '',
           i === activeSlot ? 'is-active' : '',
           i === queuedSlot ? 'is-queued' : '',
           slot.chord ? '' : 'is-empty',
+          parked ? 'is-parked' : '',
         ]
           .filter(Boolean)
           .join(' ')
@@ -65,9 +70,9 @@ export function ChordSlots({
             role="button"
             tabIndex={0}
             aria-label={
-              label
+              (label
                 ? `Slot ${i + 1}: ${label.name}, ${label.roman}${i === activeSlot ? ', playing' : ''}`
-                : `Slot ${i + 1}: empty, add a chord`
+                : `Slot ${i + 1}: empty, add a chord`) + (parked ? ', parked — outside the loop' : '')
             }
             onClick={activate}
             onKeyDown={(e) => {

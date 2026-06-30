@@ -39,6 +39,7 @@ export type Action =
   | { type: 'setSlotChord'; index: number; chord: Chord | null }
   | { type: 'setSlotDuration'; index: number; duration: SlotDuration }
   | { type: 'clearSlot'; index: number }
+  | { type: 'setLoopLength'; length: number }
   | { type: 'selectSlot'; index: number }
   | { type: 'moveSelection'; delta: number }
   | { type: 'setVoicingMode'; mode: VoicingMode }
@@ -72,6 +73,7 @@ const HISTORY_ACTIONS = new Set<Action['type']>([
   'setSlotChord',
   'setSlotDuration',
   'clearSlot',
+  'setLoopLength',
   'setVoicingMode',
   'setDirection',
   'setRhythm',
@@ -116,6 +118,8 @@ function reduceScene(scene: SceneState, action: Action): SceneState {
       )
       return { ...scene, slots }
     }
+    case 'setLoopLength':
+      return { ...scene, loopLength: clamp(Math.round(action.length), 1, SLOT_COUNT) }
     case 'setVoicingMode':
       return { ...scene, voicingMode: action.mode }
     case 'setDirection':

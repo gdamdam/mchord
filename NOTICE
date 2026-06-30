@@ -34,11 +34,10 @@ author and suite. The following portions are derived from sibling projects:
   procedural reverb-IR generator, and the voice-pool / ADSR-VCA / click-free
   AudioParam-ramp approach — from **mdrone** (src/engine/MasterBus.ts). The
   module-scope singleton + `import.meta.hot` HMR-dispose lifecycle — from
-  **mdrone** (src/App.tsx). The AudioWorklet `?worker&url` + `addModule`
-  loading convention, the AudioWorkletProcessor ambient-type declarations, and
-  the AudioContext resume / iOS-interruption handling — from **mgrains**
-  (src/audio/AudioEngine.ts, src/audio/granular.worklet.ts). The mchord
-  look-ahead limiter worklet (src/audio/worklets/limiter.worklet.ts) is new.
+  **mdrone** (src/App.tsx). The AudioContext resume / iOS-interruption handling
+  — from **mgrains** (src/audio/AudioEngine.ts). The master limiter is a native
+  `DynamicsCompressorNode` (as in mdrone). All voice synthesis and the master
+  chain wiring are mchord's own.
 
 These derivations were confirmed by the suite lead. Because every source project
 is AGPL-3.0-or-later by the same author, the reuse is covered by that license;

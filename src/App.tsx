@@ -139,6 +139,7 @@ export default function App() {
         slots={scene.slots}
         keyRoot={scene.keyRoot}
         mode={scene.mode}
+        loopLength={scene.loopLength}
         selectedSlot={state.selectedSlot}
         activeSlot={instrument.activeSlot}
         queuedSlot={instrument.queuedSlot}
@@ -161,6 +162,7 @@ export default function App() {
         direction={scene.direction}
         preset={scene.preset}
         swing={scene.swing}
+        loopLength={scene.loopLength}
         onKey={(root) => dispatch({ type: 'setKey', root })}
         onMode={(mode) => dispatch({ type: 'setMode', mode })}
         onVoicing={(mode) => dispatch({ type: 'setVoicingMode', mode })}
@@ -168,6 +170,7 @@ export default function App() {
         onDirection={(dir) => dispatch({ type: 'setDirection', dir })}
         onPreset={(preset) => dispatch({ type: 'setPreset', preset })}
         onSwing={(swing) => dispatch({ type: 'setSwing', swing })}
+        onLoopLength={(length) => dispatch({ type: 'setLoopLength', length })}
       />
 
       <AdvancedPanel

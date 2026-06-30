@@ -158,6 +158,10 @@ export function useInstrument(scene: SceneState): Instrument {
   }, [scene.macros.motion])
 
   useEffect(() => {
+    schedulerRef.current?.setLoopLength(scene.loopLength)
+  }, [scene.loopLength])
+
+  useEffect(() => {
     if (started) engine.setPreset(scene.preset)
   }, [engine, started, scene.preset])
 
@@ -240,6 +244,7 @@ export function useInstrument(scene: SceneState): Instrument {
     sched.setRhythm(s.rhythm)
     sched.setDirection(s.direction)
     sched.setMotion(s.macros.motion)
+    sched.setLoopLength(s.loopLength)
     sched.setSteps(
       voicingsRef.current.map((v, i) => ({ voicing: v, durationBars: s.slots[i]?.durationBars ?? 1 })),
       { seed: s.seed },

@@ -192,8 +192,10 @@ export interface MacroValues {
 /**
  * Current persisted/shared scene schema version. Bump on any breaking change to
  * SceneState and add a migration in the persistence layer.
+ *
+ * v2: added `loopLength` (migration defaults it to SLOT_COUNT = full loop).
  */
-export const SCENE_VERSION = 1
+export const SCENE_VERSION = 2
 
 /**
  * The complete performance scene. This is the unit that is persisted to
@@ -207,6 +209,12 @@ export interface SceneState {
   mode: Mode
   /** Exactly SLOT_COUNT slots. */
   slots: Slot[]
+  /**
+   * Number of slots included in the playback loop, 1..SLOT_COUNT. The transport
+   * cycles slots 0..loopLength-1; slots beyond it are "parked" — still editable
+   * and auditionable, but not played in the loop.
+   */
+  loopLength: number
   voicingMode: VoicingMode
   direction: Direction
   rhythm: RhythmStyle

@@ -23,6 +23,7 @@ import {
   MODES,
   PRESET_IDS,
   RHYTHM_STYLES,
+  SLOT_COUNT,
   SLOT_DURATIONS,
   VOICING_MODES,
   type SceneState,
@@ -33,8 +34,9 @@ import { sanitizeScene } from '../persistence/scene'
 /** Stable URL-fragment param key: `…#s=<payload>`. */
 const FRAGMENT_KEY = 's'
 
-/** Compact-format version (independent of SCENE_VERSION; bump on format change). */
-const COMPACT_VERSION = 1
+/** Compact-format version (independent of SCENE_VERSION; bump on format change).
+ *  v2 added `ll` (loopLength); links without it decode as a full 8-slot loop. */
+const COMPACT_VERSION = 2
 
 /**
  * Compact slot: `[familyIndex, root, durationIndex]` for a filled slot, or
@@ -47,6 +49,7 @@ interface CompactScene {
   k: number // keyRoot 0–11
   m: number // mode index
   s: CompactSlot[] // slots
+  ll: number // loopLength 1–SLOT_COUNT
   vm: number // voicingMode index
   d: number // direction index
   r: number // rhythm index
@@ -93,6 +96,7 @@ function toCompact(scene: SceneState): CompactScene {
     k: scene.keyRoot,
     m: indexOf(MODES, scene.mode),
     s: scene.slots.map(encodeSlot),
+    ll: scene.loopLength,
     vm: indexOf(VOICING_MODES, scene.voicingMode),
     d: indexOf(DIRECTIONS, scene.direction),
     r: indexOf(RHYTHM_STYLES, scene.rhythm),
@@ -121,6 +125,8 @@ function fromCompact(raw: unknown): Record<string, unknown> {
     keyRoot: raw.k,
     mode: lookup(MODES, raw.m),
     slots,
+    // Pre-v2 links have no `ll`; treat them as the original full 8-slot loop.
+    loopLength: typeof raw.ll === 'number' ? raw.ll : SLOT_COUNT,
     voicingMode: lookup(VOICING_MODES, raw.vm),
     direction: lookup(DIRECTIONS, raw.d),
     rhythm: lookup(RHYTHM_STYLES, raw.r),

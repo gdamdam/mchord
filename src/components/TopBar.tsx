@@ -1,5 +1,6 @@
 import type { LinkState } from '../transport'
 import { Meter } from './Meter'
+import { WORDMARK_ASCII } from './displayNames'
 
 interface TopBarProps {
   getLevel: () => number
@@ -12,18 +13,12 @@ export function TopBar({ getLevel, link, effectiveBpm }: TopBarProps) {
   return (
     <header className="topbar">
       <div className="brand">
-        <svg className="brand__mark" viewBox="0 0 512 512" aria-hidden="true">
-          <rect x="60" y="120" width="392" height="64" rx="32" fill="var(--accent)" />
-          <rect x="60" y="224" width="392" height="64" rx="32" fill="var(--accent-2)" />
-          <rect x="60" y="328" width="392" height="64" rx="32" fill="var(--accent-3)" />
-        </svg>
-        <div className="brand__text">
-          <span className="brand__name">
-            mchord
-            <sup className="brand__ver">v{__APP_VERSION__}</sup>
-          </span>
-          <span className="brand__tagline">Move through chords. Stay in flow.</span>
+        <div className="brand__logo">
+          <pre className="brand__ascii" aria-hidden="true">{WORDMARK_ASCII}</pre>
+          <span className="brand__ver">v{__APP_VERSION__}</span>
+          <span className="sr-only">mchord version {__APP_VERSION__}</span>
         </div>
+        <span className="brand__tagline">Move through chords. Stay in flow.</span>
       </div>
 
       <div className="topbar__status">

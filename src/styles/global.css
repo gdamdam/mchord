@@ -88,8 +88,26 @@ body {
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.brand__logo {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+/* Box-drawing wordmark. A system mono stack (not Space Mono) guarantees the
+ * U+2500 box-drawing glyphs render rather than tofu. */
+.brand__ascii {
+  margin: 0;
+  font-family: ui-monospace, Menlo, 'Cascadia Code', Consolas, 'DejaVu Sans Mono', monospace;
+  font-size: 0.62rem;
+  line-height: 1.05;
+  white-space: pre;
+  color: var(--accent);
 }
 
 .brand__mark {
@@ -104,16 +122,6 @@ body {
   line-height: 1.2;
 }
 
-.brand__name {
-  position: relative;
-  font-family: var(--font-display);
-  font-optical-sizing: auto;
-  font-size: 1.5rem;
-  font-weight: 580;
-  letter-spacing: -0.012em;
-  line-height: 1;
-}
-
 /* Version tucked at the top-right of the wordmark. */
 .brand__ver {
   font-family: var(--font-mono);
@@ -121,8 +129,6 @@ body {
   font-weight: 400;
   letter-spacing: 0;
   color: var(--accent);
-  vertical-align: super;
-  margin-left: 3px;
   opacity: 0.85;
 }
 
@@ -332,6 +338,23 @@ body {
   background: var(--bg-sunken);
   align-items: center;
   justify-content: center;
+}
+
+/* Parked: outside the playback loop. Dimmed (plus an aria hint, so the state
+ * isn't communicated by colour alone). */
+.slot.is-parked {
+  opacity: 0.4;
+}
+
+.slot.is-parked::after {
+  content: 'parked';
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
 }
 
 .slot.is-selected {
@@ -1055,9 +1078,14 @@ input[type='range']:disabled {
   gap: 10px;
 }
 
-.startgate__mark {
-  width: 76px;
-  height: 76px;
+.startgate__ascii {
+  margin: 0;
+  font-family: ui-monospace, Menlo, 'Cascadia Code', Consolas, 'DejaVu Sans Mono', monospace;
+  font-size: 1.2rem;
+  line-height: 1.05;
+  white-space: pre;
+  color: var(--accent);
+  text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .startgate__title {

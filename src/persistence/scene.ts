@@ -147,6 +147,7 @@ export function sanitizeScene(raw: unknown): SceneState {
     keyRoot: clampInt(record.keyRoot, 0, 11, fallback.keyRoot),
     mode,
     slots: sanitizeSlots(record.slots),
+    loopLength: clampInt(record.loopLength, 1, SLOT_COUNT, fallback.loopLength),
     voicingMode,
     direction,
     rhythm,
@@ -179,6 +180,9 @@ type Migration = (raw: Record<string, unknown>) => Record<string, unknown>
  */
 const MIGRATIONS: Record<number, Migration> = {
   0: (raw) => ({ ...raw, version: 1 }),
+  // v1→v2: `loopLength` was added. Old scenes looped all 8 slots, so default to
+  // SLOT_COUNT to preserve their behaviour (sanitizeScene clamps it).
+  1: (raw) => ({ ...raw, version: 2, loopLength: SLOT_COUNT }),
 }
 
 /**

@@ -41,6 +41,8 @@ export function createDefaultScene(): SceneState {
     keyRoot: C,
     mode: 'major',
     slots,
+    // Loop just the four filled chords by default for an immediate tight loop.
+    loopLength: 4,
     voicingMode: 'smooth',
     direction: 'forward',
     rhythm: 'hold',

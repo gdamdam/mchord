@@ -5,7 +5,34 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] — Unreleased
+## [1.0.0] — 2026-06-30
+
+### Added
+
+- **Loop-length control** — choose how many of the eight slots the progression
+  cycles (1–8). Slots beyond the loop are "parked": still editable and
+  auditionable, shown dimmed, but not played.
+- **Authored visual identity** — Fraunces / Space Grotesk / Space Mono type
+  (self-hosted, offline-safe), a warm "analog dusk" palette, and a box-drawing
+  wordmark logo with the version shown at its top-right.
+
+### Fixed
+
+- **No audio on start** — the master-limiter AudioWorklet declared its parameters
+  under the wrong static name (`parameters` instead of `parameterDescriptors`),
+  so `process()` threw and the node output silence.
+- **Crackling during playback** — replaced the JavaScript AudioWorklet limiter
+  with a native `DynamicsCompressorNode`. JS worklets don't flush denormals, so
+  decaying note/reverb tails caused audio-thread CPU spikes; native nodes don't.
+  Also made voice retriggers click-free (continuous `cancelAndHoldAtTime` ramps,
+  a larger voice pool, and quietest-voice stealing).
+
+### Changed
+
+- Scene schema bumped to v2 (added `loopLength`). Older saved scenes and share
+  links migrate automatically, defaulting to the full eight-slot loop.
+
+## [0.1.0] — 2026-06-30
 
 Initial release of the v0.1 instrument.
 
@@ -27,4 +54,5 @@ Initial release of the v0.1 instrument.
 - **Installable PWA** — offline-capable after the first visit, served at
   [mchord.mpump.live](https://mchord.mpump.live).
 
+[1.0.0]: https://github.com/gdamdam/mchord/releases/tag/v1.0.0
 [0.1.0]: https://github.com/gdamdam/mchord/releases/tag/v0.1.0

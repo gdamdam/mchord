@@ -17,9 +17,10 @@ is covered by unit tests (`chords.test.ts`, `scales.test.ts`, `spelling.test.ts`
 
 `src/audio/` is the synth: `voiceParams.ts`, `presets.ts`, and `macros.ts` define
 the polyphonic voices, the factory presets, and the performance macros; `dsp.ts`
-and `src/audio/worklets/` hold the DSP and the AudioWorklet stages. The engine
-builds a **native voice graph** on a single `AudioContext` created on a user
-gesture, with an **AudioWorklet limiter** as the final master stage. It is a
+holds the pure parameter/DSP helpers, `Voice.ts` the per-voice node graph, and
+`MasterBus.ts` the master chain. The engine builds a **native voice graph** on a
+single `AudioContext` created on a user gesture, with a **native
+`DynamicsCompressorNode` limiter** as the final master stage. It is a
 **singleton** — one audio graph for the whole app — so there is exactly one place
 that owns audio output.
 
@@ -68,7 +69,7 @@ this state; it never schedules audio or MIDI directly.
 service worker is **network-first for navigations** (a deploy never serves a stale
 shell) and **cache-first for hashed assets**. At install it precaches the shell
 and the content-hashed build assets listed in a generated `precache-manifest.json`,
-so the full app — including the audio worklet — works offline after one visit.
+so the full app works offline after one visit.
 
 ## Directory layout
 
@@ -79,8 +80,8 @@ src/
   harmony/                    pure theory + deterministic voice leading
     chords.ts  scales.ts  spelling.ts   (+ .test.ts beside each)
   audio/                      built-in synth (singleton engine)
+    AudioEngine.ts  Voice.ts  MasterBus.ts (native limiter)
     voiceParams.ts  presets.ts  macros.ts  dsp.ts
-    worklets/                 AudioWorklet stages (incl. limiter)
   transport/                  clock.ts (lookahead scheduler) · rhythm.ts (styles +
                               swing) · rng.ts (seeded) · link.ts (Ableton Link)
   midi/                       parse.ts  messages.ts  ownership.ts  webmidi.d.ts
