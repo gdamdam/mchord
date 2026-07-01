@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
+import type { MidiControls } from '../app/useInstrument'
 import { deleteScene, listScenes, loadScene, saveScene, type SavedScene } from '../persistence'
 import type { LinkState } from '../transport'
 import type { SceneState } from '../types'
 import { Meter } from './Meter'
+import { Select } from './Select'
 import { WORDMARK_ASCII } from './displayNames'
 
 interface TopBarProps {
@@ -13,6 +15,9 @@ interface TopBarProps {
   currentSessionName: string | null
   onLoadSession: (name: string, scene: SceneState) => void
   onSaveSession: (name: string) => void
+  localMuted: boolean
+  onToggleLocalMute: () => void
+  midi: MidiControls
 }
 
 /** Brand, live output meter, and Link status. */
@@ -24,8 +29,12 @@ export function TopBar({
   currentSessionName,
   onLoadSession,
   onSaveSession,
+  localMuted,
+  onToggleLocalMute,
+  midi,
 }: TopBarProps) {
   const menuRef = useRef<HTMLDetailsElement>(null)
+  const midiMenuRef = useRef<HTMLDetailsElement>(null)
   const [saved, setSaved] = useState<SavedScene[]>(() => listScenes())
   const [name, setName] = useState('')
 
@@ -55,7 +64,10 @@ export function TopBar({
           ref={menuRef}
           className="session-menu"
           onToggle={(event) => {
-            if (event.currentTarget.open) refresh()
+            if (event.currentTarget.open) {
+              refresh()
+              midiMenuRef.current?.removeAttribute('open')
+            }
           }}
         >
           <summary className="session-menu__button" aria-label="Open session menu">
@@ -123,6 +135,82 @@ export function TopBar({
             )}
           </div>
         </details>
+        <details
+          ref={midiMenuRef}
+          className="session-menu midi-menu"
+          onToggle={(event) => {
+            if (event.currentTarget.open) menuRef.current?.removeAttribute('open')
+          }}
+        >
+          <summary className="session-menu__button midi-menu__button" aria-label="Open MIDI setup">
+            MIDI
+            {midi.outputId && <span className="midi-menu__dot" aria-label="MIDI output connected" />}
+          </summary>
+          <div className="session-menu__sheet midi-menu__sheet">
+            <p className="session-menu__current">
+              Route chord voices to another synth, or trigger slots from MIDI notes 36–43.
+            </p>
+            {!midi.ready ? (
+              <button type="button" className="btn" onClick={() => void midi.enable()}>
+                Enable MIDI
+              </button>
+            ) : (
+              <div className="midi-menu__controls">
+                <Select
+                  label="Output"
+                  value={midi.outputId ?? ''}
+                  onChange={(value) => midi.setOutput(value || null)}
+                  options={[
+                    { value: '', label: 'None' },
+                    ...[...midi.outputs]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((output) => ({ value: output.id, label: output.name })),
+                  ]}
+                />
+                <Select
+                  label="Input"
+                  value={midi.inputId ?? ''}
+                  onChange={(value) => midi.setInput(value || null)}
+                  options={[
+                    { value: '', label: 'None' },
+                    ...[...midi.inputs]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((input) => ({ value: input.id, label: input.name })),
+                  ]}
+                />
+                <div className="midi-menu__row">
+                  <Select
+                    label="Output channel"
+                    value={String(midi.channel)}
+                    onChange={(value) => midi.setChannel(Number(value))}
+                    options={Array.from({ length: 16 }, (_, index) => ({
+                      value: String(index),
+                      label: String(index + 1),
+                    }))}
+                  />
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={midi.clock}
+                      onChange={(event) => midi.setClock(event.target.checked)}
+                    />
+                    <span>Send clock</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        </details>
+        <button
+          type="button"
+          className={`local-audio-btn${localMuted ? ' is-muted' : ''}`}
+          aria-pressed={localMuted}
+          title={localMuted ? 'Restore mchord local audio' : 'Mute mchord local audio; MIDI keeps playing'}
+          onClick={onToggleLocalMute}
+        >
+          <span aria-hidden="true">{localMuted ? '🔇' : '🔊'}</span>
+          {localMuted ? 'Local muted' : 'Local audio'}
+        </button>
         <span
           className={`link-pill${link.connected ? ' is-on' : ''}`}
           title={

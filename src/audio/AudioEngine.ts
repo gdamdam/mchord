@@ -35,6 +35,7 @@ export class AudioEngine implements NoteSink {
   private noteCounter = 0
   /** In-flight start(), so concurrent callers coalesce onto one context. */
   private startPromise: Promise<void> | null = null
+  private localMuted = false
 
   private presetId: PresetId = 'warm-poly'
   private macros: MacroValues = { tension: 0.5, spread: 0.5, motion: 0.5, color: 0.5 }
@@ -91,6 +92,7 @@ export class AudioEngine implements NoteSink {
 
     const bus = new MasterBus(ctx)
     this.bus = bus
+    bus.setLocalMuted(this.localMuted)
 
     // Build the voice pool against the master + reverb inputs.
     this.voices = []
@@ -130,6 +132,12 @@ export class AudioEngine implements NoteSink {
 
   getOutputLevel(): number {
     return this.bus?.getOutputLevel() ?? 0
+  }
+
+  /** Mute mchord's local Web Audio output without touching MIDI dispatch. */
+  setLocalMuted(muted: boolean): void {
+    this.localMuted = muted
+    this.bus?.setLocalMuted(muted)
   }
 
   // ---------------------------------------------------------------------------

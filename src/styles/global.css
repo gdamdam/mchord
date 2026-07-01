@@ -256,6 +256,59 @@ body {
   color: var(--danger);
 }
 
+.local-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+
+.local-audio-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.local-audio-btn.is-muted {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+  color: var(--danger);
+}
+
+.midi-menu__button {
+  gap: 6px;
+}
+
+.midi-menu__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-3);
+  box-shadow: 0 0 7px var(--accent-3);
+}
+
+.midi-menu__sheet {
+  width: min(320px, calc(100vw - 24px));
+}
+
+.midi-menu__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.midi-menu__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .link-pill {
   display: inline-flex;
   align-items: center;

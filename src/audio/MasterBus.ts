@@ -36,6 +36,9 @@ export class MasterBus {
   private readonly outputTrim: GainNode
   /** Brief duck pulled down on preset change to mask reconfiguration. */
   private readonly presetDuck: GainNode
+  /** Final local-monitor mute. MIDI is dispatched on a separate sink, so this
+   *  only affects mchord's browser audio. */
+  private readonly localMute: GainNode
   /** Meter tap for the UI output level. Explicitly ArrayBuffer-backed so it
    *  satisfies AnalyserNode.getFloatTimeDomainData's typed-array signature. */
   private readonly analyser: AnalyserNode
@@ -79,6 +82,9 @@ export class MasterBus {
     this.presetDuck = ctx.createGain()
     this.presetDuck.gain.value = 1
 
+    this.localMute = ctx.createGain()
+    this.localMute.gain.value = 1
+
     this.analyser = ctx.createAnalyser()
     this.analyser.fftSize = 1024
     this.meterBuf = new Float32Array(new ArrayBuffer(this.analyser.fftSize * 4))
@@ -103,7 +109,8 @@ export class MasterBus {
     this.limiter.connect(this.outputTrim)
     this.outputTrim.connect(this.analyser)
     this.analyser.connect(this.presetDuck)
-    this.presetDuck.connect(ctx.destination)
+    this.presetDuck.connect(this.localMute)
+    this.localMute.connect(ctx.destination)
   }
 
   /** Node that voices connect their dry output to. */
@@ -121,6 +128,11 @@ export class MasterBus {
   setOutputTrim(linear: number): void {
     const v = Math.max(0, Math.min(1.2, linear))
     this.outputTrim.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05)
+  }
+
+  /** Silence/restore only the browser-audio destination, click-free. */
+  setLocalMuted(muted: boolean): void {
+    this.localMute.gain.setTargetAtTime(muted ? 0 : 1, this.ctx.currentTime, 0.01)
   }
 
   /**
@@ -152,6 +164,11 @@ export class MasterBus {
   dispose(): void {
     try {
       this.presetDuck.disconnect()
+    } catch {
+      /* ok */
+    }
+    try {
+      this.localMute.disconnect()
     } catch {
       /* ok */
     }

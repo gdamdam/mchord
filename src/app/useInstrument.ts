@@ -61,6 +61,8 @@ export interface Instrument {
   effectiveBpm: number
   voicings: (Voicing | null)[]
   getOutputLevel: () => number
+  localMuted: boolean
+  toggleLocalMute: () => void
   midi: MidiControls
   link: LinkControls
 }
@@ -89,6 +91,7 @@ export function useInstrument(scene: SceneState): Instrument {
   const [queuedSlot, setQueuedSlot] = useState<number | null>(null)
   const [linkState, setLinkState] = useState<LinkState>(() => getLinkState())
   const [linkEnabled, setLinkEnabled] = useState(false)
+  const [localMuted, setLocalMuted] = useState(false)
 
   const [midiReady, setMidiReady] = useState(false)
   const [midiInputs, setMidiInputs] = useState<MidiPortInfo[]>([])
@@ -341,6 +344,14 @@ export function useInstrument(scene: SceneState): Instrument {
     setQueuedSlot(null)
   }, [engine])
 
+  const toggleLocalMute = useCallback(() => {
+    setLocalMuted((muted) => {
+      const next = !muted
+      engine.setLocalMuted(next)
+      return next
+    })
+  }, [engine])
+
   // --- MIDI controls ---
 
   const triggerSlotRef = useRef(triggerSlot)
@@ -417,6 +428,8 @@ export function useInstrument(scene: SceneState): Instrument {
     effectiveBpm,
     voicings,
     getOutputLevel: () => engine.getOutputLevel(),
+    localMuted,
+    toggleLocalMute,
     midi,
     link,
   }

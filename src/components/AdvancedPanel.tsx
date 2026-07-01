@@ -4,14 +4,12 @@ import {
   importSceneJSON,
 } from '../persistence'
 import { sceneToShareUrl } from '../sharing'
-import { Select } from './Select'
 import type { SceneState } from '../types'
-import type { LinkControls, MidiControls } from '../app/useInstrument'
+import type { LinkControls } from '../app/useInstrument'
 
 interface AdvancedPanelProps {
   scene: SceneState
   onLoadScene: (scene: SceneState, name?: string) => void
-  midi: MidiControls
   link: LinkControls
   onPanic: () => void
 }
@@ -25,7 +23,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function AdvancedPanel({ scene, onLoadScene, midi, link, onPanic }: AdvancedPanelProps) {
+export function AdvancedPanel({ scene, onLoadScene, link, onPanic }: AdvancedPanelProps) {
   const [shareNote, setShareNote] = useState('')
   const [importText, setImportText] = useState('')
   const [importError, setImportError] = useState('')
@@ -54,7 +52,7 @@ export function AdvancedPanel({ scene, onLoadScene, midi, link, onPanic }: Advan
 
   return (
     <details className="advanced">
-      <summary className="advanced__summary">Advanced — backup, MIDI, Link</summary>
+      <summary className="advanced__summary">Advanced — backup, Link</summary>
 
       <div className="advanced__grid">
         <section className="panel" aria-label="Share">
@@ -84,59 +82,6 @@ export function AdvancedPanel({ scene, onLoadScene, midi, link, onPanic }: Advan
             </button>
           </div>
           {importError && <p className="panel__note panel__note--error">{importError}</p>}
-        </section>
-
-        <section className="panel" aria-label="MIDI">
-          <h3 className="panel__title">MIDI</h3>
-          {!midi.ready ? (
-            <button type="button" className="btn" onClick={() => void midi.enable()}>
-              Enable MIDI
-            </button>
-          ) : (
-            <>
-              <Select
-                label="Output"
-                value={midi.outputId ?? ''}
-                onChange={(v) => midi.setOutput(v || null)}
-                options={[
-                  { value: '', label: 'None' },
-                  ...[...midi.outputs]
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((o) => ({ value: o.id, label: o.name })),
-                ]}
-              />
-              <Select
-                label="Input (notes 36–43 trigger slots)"
-                value={midi.inputId ?? ''}
-                onChange={(v) => midi.setInput(v || null)}
-                options={[
-                  { value: '', label: 'None' },
-                  ...[...midi.inputs]
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((o) => ({ value: o.id, label: o.name })),
-                ]}
-              />
-              <div className="panel__row">
-                <Select
-                  label="Channel"
-                  value={String(midi.channel)}
-                  onChange={(v) => midi.setChannel(Number(v))}
-                  options={Array.from({ length: 16 }, (_, i) => ({
-                    value: String(i),
-                    label: String(i + 1),
-                  }))}
-                />
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={midi.clock}
-                    onChange={(e) => midi.setClock(e.target.checked)}
-                  />
-                  <span>Send MIDI clock</span>
-                </label>
-              </div>
-            </>
-          )}
         </section>
 
         <section className="panel" aria-label="Ableton Link">

@@ -192,6 +192,9 @@ export default function App() {
         scene={scene}
         currentSessionName={currentSessionName}
         onSaveSession={setCurrentSessionName}
+        localMuted={instrument.localMuted}
+        onToggleLocalMute={instrument.toggleLocalMute}
+        midi={instrument.midi}
         onLoadSession={(name, loaded) => {
           dispatch({ type: 'loadScene', scene: loaded })
           setCurrentSessionName(name)
@@ -260,7 +263,6 @@ export default function App() {
           dispatch({ type: 'loadScene', scene: loaded })
           setCurrentSessionName(name ?? null)
         }}
-        midi={instrument.midi}
         link={instrument.link}
         onPanic={instrument.panic}
       />
