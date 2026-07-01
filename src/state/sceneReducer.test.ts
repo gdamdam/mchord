@@ -72,6 +72,25 @@ describe('sceneReducer', () => {
     expect(sceneReducer(a, { type: 'undo' }).scene.loopLength).toBe(s.scene.loopLength)
   })
 
+  it('loadProgression fills slots, sizes the loop, sets mode, and is undoable', () => {
+    const s = createInitialState()
+    const chords = [
+      { root: 0, family: 'min' as const },
+      null,
+      { root: 5, family: 'maj7' as const },
+    ]
+    const a = sceneReducer(s, { type: 'loadProgression', chords, mode: 'dorian' })
+    expect(a.scene.slots).toHaveLength(SLOT_COUNT)
+    expect(a.scene.slots[0].chord).toEqual({ root: 0, family: 'min' })
+    expect(a.scene.slots[1].chord).toBeNull()
+    expect(a.scene.slots[2].chord).toEqual({ root: 5, family: 'maj7' })
+    expect(a.scene.slots[3].chord).toBeNull() // padded to SLOT_COUNT
+    expect(a.scene.loopLength).toBe(3)
+    expect(a.scene.mode).toBe('dorian')
+    expect(a.past).toHaveLength(1)
+    expect(sceneReducer(a, { type: 'undo' }).scene.loopLength).toBe(s.scene.loopLength)
+  })
+
   it('transposes the harmonic intent when the key root changes', () => {
     const s0 = createInitialState()
     const origRoots = s0.scene.slots.map((slot) => slot.chord?.root ?? null)

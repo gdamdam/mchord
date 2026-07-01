@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react'
+
 interface TransportProps {
   playing: boolean
   onToggle: () => void
@@ -9,6 +11,7 @@ interface TransportProps {
   onVary: () => void
   onUndo: () => void
   onRedo: () => void
+  onOpenLibrary: () => void
   canUndo: boolean
   canRedo: boolean
 }
@@ -24,9 +27,28 @@ export function Transport({
   onVary,
   onUndo,
   onRedo,
+  onOpenLibrary,
   canUndo,
   canRedo,
 }: TransportProps) {
+  // Click the BPM number to type an exact tempo.
+  const [editingBpm, setEditingBpm] = useState(false)
+  const [draft, setDraft] = useState('')
+  const skipCommit = useRef(false)
+
+  const commitBpm = () => {
+    setEditingBpm(false)
+    if (skipCommit.current) {
+      skipCommit.current = false
+      return
+    }
+    const v = Math.round(Number(draft))
+    if (draft.trim() !== '' && Number.isFinite(v)) {
+      const clamped = Math.max(40, Math.min(240, v))
+      if (clamped !== bpm) onBpm(clamped)
+    }
+  }
+
   return (
     <section className="transport" aria-label="Transport">
       <button
@@ -43,7 +65,40 @@ export function Transport({
 
       <div className="tempo">
         <div className="tempo__readout">
-          <span className="tempo__bpm">{Math.round(effectiveBpm)}</span>
+          {editingBpm ? (
+            <input
+              type="number"
+              className="tempo__bpm-input"
+              min={40}
+              max={240}
+              value={draft}
+              autoFocus
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitBpm()
+                else if (e.key === 'Escape') {
+                  skipCommit.current = true
+                  setEditingBpm(false)
+                }
+              }}
+              onBlur={commitBpm}
+              aria-label="Tempo in BPM"
+            />
+          ) : (
+            <button
+              type="button"
+              className="tempo__bpm"
+              disabled={bpmLocked}
+              title={bpmLocked ? 'Tempo follows Ableton Link' : 'Click to type a BPM'}
+              onClick={() => {
+                setDraft(String(Math.round(effectiveBpm)))
+                setEditingBpm(true)
+              }}
+            >
+              {Math.round(effectiveBpm)}
+            </button>
+          )}
           <span className="tempo__unit">{bpmLocked ? 'BPM · Link' : 'BPM'}</span>
         </div>
         <input
@@ -61,6 +116,9 @@ export function Transport({
       </div>
 
       <div className="transport__actions">
+        <button type="button" className="btn" onClick={onOpenLibrary} title="Browse genre chord progressions">
+          Progressions
+        </button>
         <button type="button" className="btn" onClick={onVary} title="Vary (R)">
           Vary
         </button>

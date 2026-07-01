@@ -251,6 +251,42 @@ body {
   font-family: var(--mono);
   font-size: 1.5rem;
   font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0 4px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.tempo__bpm:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--panel-raised);
+}
+
+.tempo__bpm:disabled {
+  cursor: default;
+}
+
+.tempo__bpm-input {
+  width: 66px;
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  background: var(--bg-sunken);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 0 2px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.tempo__bpm-input::-webkit-outer-spin-button,
+.tempo__bpm-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .tempo__unit {
@@ -1055,6 +1091,93 @@ input[type='range']:disabled {
   justify-content: flex-end;
   padding-top: 8px;
   border-top: 1px solid var(--line);
+}
+
+/* -------------------------------------------------------- progression library */
+
+.proglib {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  gap: 14px;
+}
+
+.proglib__genres {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 58vh;
+  overflow: auto;
+}
+
+.proglib__genre {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.proglib__genre:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.proglib__genre.is-active {
+  color: var(--accent);
+  background: var(--panel-raised);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.proglib__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 58vh;
+  overflow: auto;
+}
+
+.proglib__item {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: var(--touch);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  color: var(--text);
+}
+
+.proglib__item:hover {
+  border-color: var(--accent);
+}
+
+.proglib__name {
+  font-weight: 600;
+}
+
+.proglib__chords {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 620px) {
+  .proglib {
+    grid-template-columns: 1fr;
+  }
+  .proglib__genres {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: none;
+  }
 }
 
 /* -------------------------------------------------------------- startgate -- */

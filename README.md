@@ -10,9 +10,9 @@
 ┛┗┗┗┛┗┗┛┛ ┗┻
 </pre>
 
-[![version](https://img.shields.io/badge/version-1.0.0-6c8f3a)](./package.json)
+[![version](https://img.shields.io/badge/version-1.1.0-6c8f3a)](./package.json)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](./LICENSE)
-[![tests](https://img.shields.io/badge/tests-319%20passing-2ea043)](#verification)
+[![tests](https://img.shields.io/badge/tests-324%20passing-2ea043)](#verification)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](./tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
@@ -34,6 +34,7 @@
 - **Eight chord slots** with a moving playhead — active (amber) and queued (rose) states are unmistakable. Each slot shows its Roman numeral, key-correct name, compact spelling, and a stability/colour cue.
 - **Loop the slots you want** — set the loop length (1–8); slots beyond it stay editable but parked (silent).
 - **Harmonically-aware palette** — diatonic chords first, then borrowed and chromatic, coloured by stability so tension reads at a glance.
+- **Genre progression library** — 200 curated chord progressions across 20 electronic genres (mirroring mpump's genre list); load one into your current key with a click. Click the BPM readout to type an exact tempo.
 - **Four performance macros** — Tension · Spread · Motion · Color — each sweeps a curated group of voicing and synth parameters.
 - **Eight rhythm styles** — Hold, Pulse, Stab, Offbeat, Arp ↑/↓/↕, Broken — responsive to BPM, swing, and Motion, with forward / reverse / pendulum / seeded-random playback.
 - **Built-in polyphonic synth** — eight authored presets and four macros over a native Web Audio voice graph (detuned oscillators, filter + ADSR, stereo spread) into a glue compressor and a native master limiter. Click-free preset changes, panic, no hung notes.
@@ -104,7 +105,7 @@ See [`docs/architecture.md`](./docs/architecture.md) for detail.
 ## Verification
 
 ```bash
-npm run check   # typecheck + lint + 319 tests + production build
+npm run check   # typecheck + lint + 324 tests + production build
 ```
 
 Tests are deterministic and live next to the code (scales, chords, spelling, voice-leading determinism, generation, reducer + undo, scheduler planning, rhythm, MIDI bytes + note ownership, persistence migrations, share round-trips, keyboard map). Vitest runs in a Node environment, so live audio is covered by the manual QA checklist, not unit tests.

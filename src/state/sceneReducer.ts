@@ -17,6 +17,7 @@ import type {
   PresetId,
   RhythmStyle,
   SceneState,
+  Slot,
   SlotDuration,
   VoicingMode,
 } from '../types'
@@ -40,6 +41,7 @@ export type Action =
   | { type: 'setSlotDuration'; index: number; duration: SlotDuration }
   | { type: 'clearSlot'; index: number }
   | { type: 'setLoopLength'; length: number }
+  | { type: 'loadProgression'; chords: (Chord | null)[]; mode?: Mode }
   | { type: 'selectSlot'; index: number }
   | { type: 'moveSelection'; delta: number }
   | { type: 'setVoicingMode'; mode: VoicingMode }
@@ -74,6 +76,7 @@ const HISTORY_ACTIONS = new Set<Action['type']>([
   'setSlotDuration',
   'clearSlot',
   'setLoopLength',
+  'loadProgression',
   'setVoicingMode',
   'setDirection',
   'setRhythm',
@@ -120,6 +123,21 @@ function reduceScene(scene: SceneState, action: Action): SceneState {
     }
     case 'setLoopLength':
       return { ...scene, loopLength: clamp(Math.round(action.length), 1, SLOT_COUNT) }
+    case 'loadProgression': {
+      // Fill from the top, pad to SLOT_COUNT, and size the loop to the
+      // progression. Durations reset to 1 bar; mode switches if the preset asks.
+      const chords = action.chords.slice(0, SLOT_COUNT)
+      const slots: Slot[] = []
+      for (let i = 0; i < SLOT_COUNT; i++) {
+        slots.push({ chord: chords[i] ?? null, durationBars: 1 })
+      }
+      return {
+        ...scene,
+        slots,
+        loopLength: clamp(chords.length, 1, SLOT_COUNT),
+        mode: action.mode ?? scene.mode,
+      }
+    }
     case 'setVoicingMode':
       return { ...scene, voicingMode: action.mode }
     case 'setDirection':

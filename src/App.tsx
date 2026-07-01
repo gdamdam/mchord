@@ -5,6 +5,7 @@ import { ChordPalette } from './components/ChordPalette'
 import { ChordSlots } from './components/ChordSlots'
 import { HarmonyControls } from './components/HarmonyControls'
 import { Macros } from './components/Macros'
+import { ProgressionBrowser } from './components/ProgressionBrowser'
 import { StartGate } from './components/StartGate'
 import { TopBar } from './components/TopBar'
 import { Transport } from './components/Transport'
@@ -42,6 +43,7 @@ export default function App() {
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteSlot, setPaletteSlot] = useState<number | null>(null)
+  const [progressionsOpen, setProgressionsOpen] = useState(false)
 
   // Drop a share fragment after loading so a refresh doesn't clobber edits.
   useEffect(() => {
@@ -52,9 +54,9 @@ export default function App() {
 
   // Keep the latest values reachable from the one stable keydown listener.
   // Synced in an effect; the listener only reads them inside an event callback.
-  const refs = useRef({ instrument, state, paletteOpen })
+  const refs = useRef({ instrument, state, paletteOpen, progressionsOpen })
   useEffect(() => {
-    refs.current = { instrument, state, paletteOpen }
+    refs.current = { instrument, state, paletteOpen, progressionsOpen }
   })
 
   const openPaletteFor = (index: number) => {
@@ -65,12 +67,15 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const { instrument: inst, state: st, paletteOpen: overlay } = refs.current
+      const { instrument: inst, state: st, paletteOpen: pOpen, progressionsOpen: prOpen } = refs.current
+      const overlay = pOpen || prOpen
       const cmd = keyToCommand(
         { key: e.key, code: e.code, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey },
         { typing: isEditableTarget(e.target), overlayOpen: overlay },
       )
       if (!cmd) return
+      // While a modal is open, only let Escape (closeOverlay) through.
+      if (overlay && cmd.kind !== 'closeOverlay') return
       if (
         (cmd.kind === 'toggleTransport' || cmd.kind === 'openOrCommitChord') &&
         isInteractive(e.target)
@@ -103,6 +108,7 @@ export default function App() {
           break
         case 'closeOverlay':
           setPaletteOpen(false)
+          setProgressionsOpen(false)
           break
       }
     }
@@ -131,6 +137,7 @@ export default function App() {
         onVary={() => dispatch({ type: 'vary' })}
         onUndo={() => dispatch({ type: 'undo' })}
         onRedo={() => dispatch({ type: 'redo' })}
+        onOpenLibrary={() => setProgressionsOpen(true)}
         canUndo={state.past.length > 0}
         canRedo={state.future.length > 0}
       />
@@ -193,6 +200,16 @@ export default function App() {
         onClear={() => {
           if (paletteSlot !== null) dispatch({ type: 'clearSlot', index: paletteSlot })
         }}
+      />
+
+      <ProgressionBrowser
+        open={progressionsOpen}
+        onClose={() => setProgressionsOpen(false)}
+        keyRoot={scene.keyRoot}
+        mode={scene.mode}
+        onLoad={(chords, loadedMode) =>
+          dispatch({ type: 'loadProgression', chords, mode: loadedMode })
+        }
       />
 
       {!instrument.started && <StartGate onStart={instrument.start} />}

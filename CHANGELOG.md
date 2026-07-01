@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-06-30
+
+### Added
+
+- **Genre progression library** — 200 curated chord progressions (10 each across
+  the 20 electronic genres from mpump's catalog: techno, house, trance, DnB,
+  ambient, lo-fi, synthwave, dub-techno, and more). Progressions are stored
+  key-agnostically and instantiate into the current key.
+- **Progressions browser** — a "Progressions" button opens a genre-browsing modal
+  to preview and load any progression into the slots (sets the loop length and,
+  when the preset suggests one, the mode).
+- **Type an exact tempo** — click the BPM readout to enter a value directly
+  (Enter to commit, Escape to cancel), in addition to the slider.
+
 ## [1.0.0] — 2026-06-30
 
 ### Added
@@ -54,5 +68,6 @@ Initial release of the v0.1 instrument.
 - **Installable PWA** — offline-capable after the first visit, served at
   [mchord.mpump.live](https://mchord.mpump.live).
 
+[1.1.0]: https://github.com/gdamdam/mchord/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gdamdam/mchord/releases/tag/v1.0.0
 [0.1.0]: https://github.com/gdamdam/mchord/releases/tag/v0.1.0

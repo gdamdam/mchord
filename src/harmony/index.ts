@@ -42,3 +42,11 @@ export {
   generateProgression,
   varyProgression,
 } from './generation'
+
+export {
+  GENRES,
+  GENRE_LABELS,
+  PROGRESSION_LIBRARY,
+  instantiateProgression,
+} from './progressions'
+export type { Genre, ProgChord, ProgressionPreset, ProgressionLibrary } from './progressions'
