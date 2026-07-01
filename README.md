@@ -21,6 +21,10 @@
 
 ### [▶ Play it live → mchord.mpump.live](https://mchord.mpump.live)
 
+<br>
+
+![mchord in action](./mchord_screenshot.gif)
+
 </div>
 
 ---
