@@ -6,9 +6,15 @@ import { ChordSlots } from './components/ChordSlots'
 import { HarmonyControls } from './components/HarmonyControls'
 import { Macros } from './components/Macros'
 import { ProgressionBrowser } from './components/ProgressionBrowser'
+import { StartGate } from './components/StartGate'
 import { TopBar } from './components/TopBar'
 import { Transport } from './components/Transport'
-import { createDefaultScene } from './persistence'
+import {
+  createDefaultScene,
+  loadAutosavedScene,
+  saveAutosavedScene,
+  type AutosavedScene,
+} from './persistence'
 import { sceneFromUrl } from './sharing'
 import { createInitialState, isEditableTarget, keyToCommand, sceneReducer } from './state'
 import type { Chord, MacroValues } from './types'
@@ -29,16 +35,26 @@ function isInteractive(target: EventTarget | null): boolean {
 }
 
 export default function App() {
+  const [startup] = useState<{
+    sharedScene: ReturnType<typeof sceneFromUrl>
+    lastScene: AutosavedScene | null
+  }>(() => {
+    try {
+      const sharedScene = sceneFromUrl(window.location.hash)
+      return { sharedScene, lastScene: sharedScene ? null : loadAutosavedScene() }
+    } catch {
+      return { sharedScene: null, lastScene: loadAutosavedScene() }
+    }
+  })
+
   // Load a shared scene from the URL fragment once, at mount, via the reducer's
   // lazy initializer (falls back to the default scene on any malformed input).
   const [state, dispatch] = useReducer(sceneReducer, undefined, () => {
-    try {
-      return createInitialState(sceneFromUrl(window.location.hash) ?? createDefaultScene())
-    } catch {
-      return createInitialState(createDefaultScene())
-    }
+    return createInitialState(startup.sharedScene ?? createDefaultScene())
   })
   const instrument = useInstrument(state.scene)
+  const [hasStarted, setHasStarted] = useState(startup.sharedScene !== null)
+  const [currentSessionName, setCurrentSessionName] = useState<string | null>(null)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteSlot, setPaletteSlot] = useState<number | null>(null)
@@ -53,9 +69,9 @@ export default function App() {
 
   // Keep the latest values reachable from the one stable keydown listener.
   // Synced in an effect; the listener only reads them inside an event callback.
-  const refs = useRef({ instrument, state, paletteOpen, progressionsOpen })
+  const refs = useRef({ instrument, state, paletteOpen, progressionsOpen, hasStarted })
   useEffect(() => {
-    refs.current = { instrument, state, paletteOpen, progressionsOpen }
+    refs.current = { instrument, state, paletteOpen, progressionsOpen, hasStarted }
   })
 
   const openPaletteFor = (index: number) => {
@@ -66,7 +82,14 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const { instrument: inst, state: st, paletteOpen: pOpen, progressionsOpen: prOpen } = refs.current
+      const {
+        instrument: inst,
+        state: st,
+        paletteOpen: pOpen,
+        progressionsOpen: prOpen,
+        hasStarted: ready,
+      } = refs.current
+      if (!ready) return
       const overlay = pOpen || prOpen
       const cmd = keyToCommand(
         { key: e.key, code: e.code, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey },
@@ -117,12 +140,62 @@ export default function App() {
 
   const { scene } = state
 
+  const sceneRef = useRef(scene)
+  useEffect(() => {
+    sceneRef.current = scene
+  }, [scene])
+
+  // Mirror mdrone's last-session behavior: save periodically and flush when
+  // the page is hidden, but never overwrite the previous session while the
+  // launch choice is still on screen.
+  useEffect(() => {
+    if (!hasStarted) return
+    const save = () => saveAutosavedScene(sceneRef.current)
+    const id = window.setInterval(save, 3000)
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') save()
+    }
+    window.addEventListener('pagehide', save)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.clearInterval(id)
+      window.removeEventListener('pagehide', save)
+      document.removeEventListener('visibilitychange', onVisibility)
+      save()
+    }
+  }, [hasStarted])
+
+  if (!hasStarted) {
+    return (
+      <StartGate
+        lastScene={startup.lastScene}
+        onStart={(mode) => {
+          dispatch({
+            type: 'loadScene',
+            scene: mode === 'continue' && startup.lastScene
+              ? startup.lastScene.scene
+              : createDefaultScene(),
+          })
+          setCurrentSessionName(null)
+          setHasStarted(true)
+        }}
+      />
+    )
+  }
+
   return (
     <main className="app">
       <TopBar
         getLevel={instrument.getOutputLevel}
         link={instrument.link.state}
         effectiveBpm={instrument.effectiveBpm}
+        scene={scene}
+        currentSessionName={currentSessionName}
+        onSaveSession={setCurrentSessionName}
+        onLoadSession={(name, loaded) => {
+          dispatch({ type: 'loadScene', scene: loaded })
+          setCurrentSessionName(name)
+        }}
       />
 
       <Transport
@@ -183,7 +256,10 @@ export default function App() {
 
       <AdvancedPanel
         scene={scene}
-        onLoadScene={(loaded) => dispatch({ type: 'loadScene', scene: loaded })}
+        onLoadScene={(loaded, name) => {
+          dispatch({ type: 'loadScene', scene: loaded })
+          setCurrentSessionName(name ?? null)
+        }}
         midi={instrument.midi}
         link={instrument.link}
         onPanic={instrument.panic}

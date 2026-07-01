@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import {
-  deleteScene,
   exportSceneJSON,
   importSceneJSON,
-  listScenes,
-  loadScene,
-  saveScene,
-  type SavedScene,
 } from '../persistence'
 import { sceneToShareUrl } from '../sharing'
 import { Select } from './Select'
@@ -15,7 +10,7 @@ import type { LinkControls, MidiControls } from '../app/useInstrument'
 
 interface AdvancedPanelProps {
   scene: SceneState
-  onLoadScene: (scene: SceneState) => void
+  onLoadScene: (scene: SceneState, name?: string) => void
   midi: MidiControls
   link: LinkControls
   onPanic: () => void
@@ -31,21 +26,9 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 export function AdvancedPanel({ scene, onLoadScene, midi, link, onPanic }: AdvancedPanelProps) {
-  const [saved, setSaved] = useState<SavedScene[]>(() => listScenes())
-  const [name, setName] = useState('')
   const [shareNote, setShareNote] = useState('')
   const [importText, setImportText] = useState('')
   const [importError, setImportError] = useState('')
-
-  const refresh = () => setSaved(listScenes())
-
-  const onSave = () => {
-    const trimmed = name.trim()
-    if (!trimmed) return
-    saveScene(trimmed, scene)
-    setName('')
-    refresh()
-  }
 
   const onShare = async () => {
     const url = sceneToShareUrl(scene, `${location.origin}${location.pathname}`)
@@ -71,55 +54,9 @@ export function AdvancedPanel({ scene, onLoadScene, midi, link, onPanic }: Advan
 
   return (
     <details className="advanced">
-      <summary className="advanced__summary">Advanced — scenes, MIDI, Link</summary>
+      <summary className="advanced__summary">Advanced — backup, MIDI, Link</summary>
 
       <div className="advanced__grid">
-        <section className="panel" aria-label="Scenes">
-          <h3 className="panel__title">Scenes</h3>
-          <div className="panel__row">
-            <input
-              className="text-input"
-              type="text"
-              placeholder="Scene name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              aria-label="Scene name"
-            />
-            <button type="button" className="btn" onClick={onSave} disabled={!name.trim()}>
-              Save
-            </button>
-          </div>
-          {saved.length > 0 && (
-            <ul className="scene-list">
-              {saved.map((s) => (
-                <li key={s.name} className="scene-list__item">
-                  <button
-                    type="button"
-                    className="scene-list__load"
-                    onClick={() => {
-                      const loaded = loadScene(s.name)
-                      if (loaded) onLoadScene(loaded)
-                    }}
-                  >
-                    {s.name}
-                  </button>
-                  <button
-                    type="button"
-                    className="scene-list__del"
-                    aria-label={`Delete ${s.name}`}
-                    onClick={() => {
-                      deleteScene(s.name)
-                      refresh()
-                    }}
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
         <section className="panel" aria-label="Share">
           <h3 className="panel__title">Share & backup</h3>
           <div className="panel__row">

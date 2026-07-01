@@ -42,7 +42,7 @@
 - **Four performance macros** — Tension · Spread · Motion · Color — each sweeps a curated group of voicing and synth parameters.
 - **37 play styles in 7 groups** — Block, Arp (up/down/updown/broken + converge/diverge/thumb/octaves), Strum, Melodic (guide-tone/top-line/pedal), Ostinato (Alberti/gallop/cell), Euclidean (E3/E5/E7), and **Split (bass + melody)** — performances that play the chord as a low bass voice plus a moving melody/arp in a different octave (house, techno, trance, dub, synthwave, lo-fi, garage, ambient, dubstep, downtempo, psy, DnB). All responsive to BPM, swing, and Motion, with forward / reverse / pendulum / seeded-random playback.
 - **Built-in polyphonic synth** — eight authored presets and four macros over a native Web Audio voice graph (detuned oscillators, filter + ADSR, stereo spread) into a glue compressor and a native master limiter. Click-free preset changes, panic, no hung notes.
-- **Save & share** — versioned local persistence with migrations, readable JSON import/export, and a self-contained share link that encodes the whole scene — no backend.
+- **Resume, save & share** — the working session autosaves for “Continue Last Session”; named sessions use versioned local persistence with migrations, readable JSON import/export, and self-contained share links — no backend.
 - **Optional MIDI in/out + clock** — sends the *actual voiced notes* (not root-position) with correct note-ownership and note-offs; channel select and 24-PPQN clock. Never required.
 - **Optional Ableton Link** — tempo-follow and quantised start via the companion **mpump** link-bridge; degrades gracefully when it's absent.
 - **Installable PWA** — network-first navigation, cache-first hashed assets, offline after one visit.
@@ -116,7 +116,7 @@ Tests are deterministic and live next to the code (scales, chords, spelling, voi
 
 ## Privacy
 
-Everything is local. No account, no cookies, no telemetry, no fingerprinting. Saved scenes live in your browser's `localStorage`; share links carry the scene in the URL fragment and never hit a server. No audio or MIDI data is sent anywhere.
+Everything is local. No account, no cookies, no telemetry, no fingerprinting. The last working session and named saved sessions live in your browser's `localStorage`; share links carry the scene in the URL fragment and never hit a server. No audio or MIDI data is sent anywhere.
 
 ## Browser notes & limitations
 

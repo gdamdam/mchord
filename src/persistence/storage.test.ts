@@ -8,6 +8,8 @@ import {
   deleteScene,
   exportSceneJSON,
   importSceneJSON,
+  loadAutosavedScene,
+  saveAutosavedScene,
 } from './storage'
 
 // ---------------------------------------------------------------------------
@@ -41,6 +43,7 @@ class MemoryStorage {
 }
 
 const STORAGE_KEY = 'mchord:scenes:v1'
+const AUTOSAVE_KEY = 'mchord:autosave:v1'
 
 beforeEach(() => {
   const mem = new MemoryStorage()
@@ -149,6 +152,34 @@ describe('storage without localStorage (degrades gracefully)', () => {
     expect(listScenes()).toEqual([])
     expect(loadScene('x')).toBeNull()
     expect(() => deleteScene('x')).not.toThrow()
+    expect(saveAutosavedScene(createDefaultScene())).toBe(false)
+    expect(loadAutosavedScene()).toBeNull()
+  })
+})
+
+describe('last-session autosave', () => {
+  it('round-trips a sanitised scene with a timestamp', () => {
+    expect(loadAutosavedScene()).toBeNull()
+    expect(saveAutosavedScene({ ...createDefaultScene(), bpm: 137 })).toBe(true)
+
+    const saved = loadAutosavedScene()
+    expect(saved?.scene.bpm).toBe(137)
+    expect(typeof saved?.savedAt).toBe('number')
+  })
+
+  it('returns null for malformed autosave JSON', () => {
+    const mem = globalThis.localStorage as unknown as MemoryStorage
+    mem.__setRaw(AUTOSAVE_KEY, '{bad json')
+    expect(loadAutosavedScene()).toBeNull()
+  })
+
+  it('migrates and sanitises autosaved scene data', () => {
+    const mem = globalThis.localStorage as unknown as MemoryStorage
+    mem.__setRaw(AUTOSAVE_KEY, JSON.stringify({ savedAt: 12, scene: { bpm: 9999 } }))
+    const saved = loadAutosavedScene()
+    expect(saved?.savedAt).toBe(12)
+    expect(saved?.scene.bpm).toBe(240)
+    expect(saved?.scene.version).toBe(SCENE_VERSION)
   })
 })
 

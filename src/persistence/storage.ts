@@ -12,10 +12,17 @@ import { migrateScene, sanitizeScene } from './scene'
 
 /** Namespaced, versioned storage key. Bump the suffix on a storage-shape change. */
 const STORAGE_KEY = 'mchord:scenes:v1'
+const AUTOSAVE_KEY = 'mchord:autosave:v1'
 
 /** A named, timestamped saved scene. */
 export interface SavedScene {
   name: string
+  scene: SceneState
+  savedAt: number
+}
+
+/** The most recent working scene, maintained automatically while the app is open. */
+export interface AutosavedScene {
   scene: SceneState
   savedAt: number
 }
@@ -125,6 +132,42 @@ export function deleteScene(name: string): void {
   const entries = listScenes()
   const without = entries.filter((e) => e.name !== name)
   if (without.length !== entries.length) writeAll(without)
+}
+
+/**
+ * Persist the current working scene for the next launch. Returns false when
+ * browser storage is unavailable or rejects the write.
+ */
+export function saveAutosavedScene(scene: SceneState): boolean {
+  const store = getStore()
+  if (!store) return false
+  try {
+    const snapshot: AutosavedScene = {
+      scene: sanitizeScene(scene),
+      savedAt: Date.now(),
+    }
+    store.setItem(AUTOSAVE_KEY, JSON.stringify(snapshot))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Load the last working scene, validating it at the storage boundary. */
+export function loadAutosavedScene(): AutosavedScene | null {
+  const store = getStore()
+  if (!store) return null
+  try {
+    const text = store.getItem(AUTOSAVE_KEY)
+    if (text === null) return null
+    const raw: unknown = JSON.parse(text)
+    if (!isRecord(raw)) return null
+    const savedAt =
+      typeof raw.savedAt === 'number' && Number.isFinite(raw.savedAt) ? raw.savedAt : 0
+    return { scene: migrateScene(raw.scene), savedAt }
+  } catch {
+    return null
+  }
 }
 
 // ---------------------------------------------------------------------------
