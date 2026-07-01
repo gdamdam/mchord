@@ -332,7 +332,7 @@ export function useInstrument(scene: SceneState): Instrument {
       // but suppressing it here keeps the transport echo-free).
       if (shouldSendPlaying(linkState.playing, true)) sendLinkPlaying(true)
     }
-  }, [start, engine, linkState.connected])
+  }, [start, engine, linkState.connected, linkState.playing])
 
   const triggerSlot = useCallback(
     (index: number) => {
