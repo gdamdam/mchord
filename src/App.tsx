@@ -194,6 +194,8 @@ export default function App() {
         onSaveSession={setCurrentSessionName}
         localMuted={instrument.localMuted}
         onToggleLocalMute={instrument.toggleLocalMute}
+        masterVolume={instrument.masterVolume}
+        onMasterVolume={instrument.setMasterVolume}
         midi={instrument.midi}
         onLoadSession={(name, loaded) => {
           dispatch({ type: 'loadScene', scene: loaded })

@@ -65,6 +65,8 @@ export interface Instrument {
   getOutputLevel: () => number
   localMuted: boolean
   toggleLocalMute: () => void
+  masterVolume: number
+  setMasterVolume: (volume: number) => void
   midi: MidiControls
   link: LinkControls
 }
@@ -94,6 +96,7 @@ export function useInstrument(scene: SceneState): Instrument {
   const [linkState, setLinkState] = useState<LinkState>(() => getLinkState())
   const [linkEnabled, setLinkEnabled] = useState(false)
   const [localMuted, setLocalMuted] = useState(false)
+  const [masterVolume, setMasterVolumeState] = useState(0.9)
 
   const [midiReady, setMidiReady] = useState(false)
   const [midiInputs, setMidiInputs] = useState<MidiPortInfo[]>([])
@@ -393,6 +396,14 @@ export function useInstrument(scene: SceneState): Instrument {
     })
   }, [engine])
 
+  const setMasterVolume = useCallback(
+    (volume: number) => {
+      engine.setMasterVolume(volume)
+      setMasterVolumeState(volume)
+    },
+    [engine],
+  )
+
   // --- MIDI controls ---
 
   const triggerSlotRef = useRef(triggerSlot)
@@ -471,6 +482,8 @@ export function useInstrument(scene: SceneState): Instrument {
     getOutputLevel: () => engine.getOutputLevel(),
     localMuted,
     toggleLocalMute,
+    masterVolume,
+    setMasterVolume,
     midi,
     link,
   }

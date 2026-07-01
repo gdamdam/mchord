@@ -280,6 +280,29 @@ body {
   color: var(--danger);
 }
 
+.volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text-dim);
+}
+
+.volume__icon {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.volume__input {
+  width: 72px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .midi-menu__button {
   gap: 6px;
 }

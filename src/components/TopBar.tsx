@@ -17,6 +17,8 @@ interface TopBarProps {
   onSaveSession: (name: string) => void
   localMuted: boolean
   onToggleLocalMute: () => void
+  masterVolume: number
+  onMasterVolume: (volume: number) => void
   midi: MidiControls
 }
 
@@ -31,6 +33,8 @@ export function TopBar({
   onSaveSession,
   localMuted,
   onToggleLocalMute,
+  masterVolume,
+  onMasterVolume,
   midi,
 }: TopBarProps) {
   const menuRef = useRef<HTMLDetailsElement>(null)
@@ -201,6 +205,23 @@ export function TopBar({
             )}
           </div>
         </details>
+        <label className="volume" title="Master output volume">
+          <span className="sr-only">Master volume</span>
+          <span className="volume__icon" aria-hidden="true">
+            ▮
+          </span>
+          <input
+            type="range"
+            className="volume__input"
+            min={0}
+            max={1.2}
+            step={0.01}
+            value={masterVolume}
+            onChange={(event) => onMasterVolume(Number(event.target.value))}
+            aria-label="Master volume"
+            aria-valuetext={`${Math.round(masterVolume * 100)}%`}
+          />
+        </label>
         <button
           type="button"
           className={`local-audio-btn${localMuted ? ' is-muted' : ''}`}

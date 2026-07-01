@@ -36,6 +36,8 @@ export class AudioEngine implements NoteSink {
   /** In-flight start(), so concurrent callers coalesce onto one context. */
   private startPromise: Promise<void> | null = null
   private localMuted = false
+  /** Master output volume (0..1.2). Matches MasterBus outputTrim default. */
+  private masterVolume = 0.9
 
   private presetId: PresetId = 'warm-poly'
   private macros: MacroValues = { tension: 0.5, spread: 0.5, motion: 0.5, color: 0.5 }
@@ -93,6 +95,7 @@ export class AudioEngine implements NoteSink {
     const bus = new MasterBus(ctx)
     this.bus = bus
     bus.setLocalMuted(this.localMuted)
+    bus.setOutputTrim(this.masterVolume)
 
     // Build the voice pool against the master + reverb inputs.
     this.voices = []
@@ -138,6 +141,12 @@ export class AudioEngine implements NoteSink {
   setLocalMuted(muted: boolean): void {
     this.localMuted = muted
     this.bus?.setLocalMuted(muted)
+  }
+
+  /** Set master output volume (0..1.2), click-free. */
+  setMasterVolume(volume: number): void {
+    this.masterVolume = volume
+    this.bus?.setOutputTrim(volume)
   }
 
   // ---------------------------------------------------------------------------
