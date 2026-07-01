@@ -1,10 +1,13 @@
+import { useDragCommit } from './useDragCommit'
+
 interface SliderProps {
   label: string
   value: number
   min: number
   max: number
   step?: number
-  onChange: (value: number) => void
+  /** `transient` is true for mid-drag increments (no undo checkpoint). */
+  onChange: (value: number, transient?: boolean) => void
   /** Render the current value for display + screen-reader text. */
   format?: (value: number) => string
 }
@@ -15,6 +18,7 @@ interface SliderProps {
  */
 export function Slider({ label, value, min, max, step = 1, onChange, format }: SliderProps) {
   const shown = format ? format(value) : String(value)
+  const { commit, dragProps } = useDragCommit(onChange)
   return (
     <label className="slider">
       <span className="slider__label">
@@ -28,7 +32,8 @@ export function Slider({ label, value, min, max, step = 1, onChange, format }: S
         max={max}
         step={step}
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => commit(Number(e.target.value))}
+        {...dragProps}
         aria-label={label}
         aria-valuetext={shown}
       />

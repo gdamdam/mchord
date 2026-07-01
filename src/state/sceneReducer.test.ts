@@ -54,6 +54,29 @@ describe('sceneReducer', () => {
     expect(s.past.length).toBeLessThanOrEqual(MAX_HISTORY)
   })
 
+  it('coalesces a slider drag into one undo step via the transient flag', () => {
+    const s0 = createInitialState()
+    // First change of a drag checkpoints normally.
+    const s1 = sceneReducer(s0, { type: 'setMacro', macro: 'tension', value: 0.5 })
+    expect(s1.past).toHaveLength(1)
+    // Subsequent mid-drag increments are transient: scene updates, no new checkpoint.
+    const s2 = sceneReducer(s1, { type: 'setMacro', macro: 'tension', value: 0.6, transient: true })
+    const s3 = sceneReducer(s2, { type: 'setMacro', macro: 'tension', value: 0.7, transient: true })
+    expect(s3.scene.macros.tension).toBeCloseTo(0.7)
+    expect(s3.past).toHaveLength(1)
+    // A single undo restores the pre-drag value.
+    expect(sceneReducer(s3, { type: 'undo' }).scene.macros.tension).toBe(s0.scene.macros.tension)
+  })
+
+  it('transient changes still clear the redo stack', () => {
+    const s = run(createInitialState(), { type: 'setBpm', bpm: 120 }, { type: 'setBpm', bpm: 140 })
+    const u = sceneReducer(s, { type: 'undo' })
+    expect(u.future).toHaveLength(1)
+    const t = sceneReducer(u, { type: 'setBpm', bpm: 150, transient: true })
+    expect(t.scene.bpm).toBe(150)
+    expect(t.future).toHaveLength(0)
+  })
+
   it('clamps bpm, swing, and macros', () => {
     const s = createInitialState()
     expect(sceneReducer(s, { type: 'setBpm', bpm: 9999 }).scene.bpm).toBe(240)

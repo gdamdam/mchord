@@ -47,10 +47,10 @@ export type Action =
   | { type: 'setVoicingMode'; mode: VoicingMode }
   | { type: 'setDirection'; dir: Direction }
   | { type: 'setRhythm'; style: RhythmStyle }
-  | { type: 'setBpm'; bpm: number }
-  | { type: 'setSwing'; swing: number }
+  | { type: 'setBpm'; bpm: number; transient?: boolean }
+  | { type: 'setSwing'; swing: number; transient?: boolean }
   | { type: 'setPreset'; preset: PresetId }
-  | { type: 'setMacro'; macro: keyof MacroValues; value: number }
+  | { type: 'setMacro'; macro: keyof MacroValues; value: number; transient?: boolean }
   | { type: 'generate'; seed?: number }
   | { type: 'vary'; seed?: number }
   | { type: 'loadScene'; scene: SceneState }
@@ -204,6 +204,13 @@ export function sceneReducer(state: AppState, action: Action): AppState {
       if (!HISTORY_ACTIONS.has(action.type)) return state
       const nextScene = reduceScene(state.scene, action)
       if (nextScene === state.scene) return state
+      // A `transient` change (a mid-drag slider increment) updates the scene
+      // without pushing a new checkpoint, so an entire drag collapses to one
+      // undo step — the drag's first, non-transient change already checkpointed
+      // the pre-drag scene. It still clears redo: any mutation invalidates it.
+      if ((action as { transient?: boolean }).transient) {
+        return { ...state, scene: nextScene, future: [] }
+      }
       return {
         ...state,
         scene: nextScene,

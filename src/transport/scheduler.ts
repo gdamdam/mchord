@@ -268,6 +268,16 @@ export class Scheduler {
   }
 
   setTempo(bpm: number): void {
+    // Rebase startTime so the current musical position (bars elapsed) is
+    // preserved across a live tempo change. Without this, every slot boundary
+    // is recomputed from startTime at the new bar length, reinterpreting the
+    // whole elapsed timeline and jumping the active slot forward or backward
+    // (e.g. on a BPM-slider drag or an incoming Link tempo update). Since bar
+    // length is inversely proportional to bpm, the rebase is a simple ratio.
+    if (this._playing && bpm > 0 && this.bpm > 0 && bpm !== this.bpm) {
+      const now = this.now()
+      this.startTime = now - (now - this.startTime) * (this.bpm / bpm)
+    }
     this.bpm = bpm
   }
 

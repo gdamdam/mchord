@@ -152,6 +152,28 @@ describe('Scheduler class', () => {
     s.dispose()
   })
 
+  it('rebases the timeline on a live tempo change so the active slot does not jump', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([
+      { voicing: triad(60), durationBars: 1 },
+      { voicing: triad(62), durationBars: 1 },
+      { voicing: triad(64), durationBars: 1 },
+      { voicing: triad(65), durationBars: 1 },
+    ])
+    s.setTempo(120) // bar = 2s
+    const seen: number[] = []
+    s.onStep(({ index }) => seen.push(index))
+    s.start(0)
+    advance(3.0) // 3.0s in → slot 1 (2..4s)
+    expect(seen[seen.length - 1]).toBe(1)
+    // Double the tempo mid-slot. Without rebasing, t=3.0 at bar=1s would read as
+    // slot 3; the rebase keeps us in slot 1 and only changes the rate onward.
+    s.setTempo(240)
+    advance(0.05) // let a tick re-emit the active step
+    expect(seen[seen.length - 1]).toBe(1)
+    s.dispose()
+  })
+
   it('setSeed makes random direction reproducible across two schedulers', () => {
     const mk = () => {
       const sk = new FakeSink()

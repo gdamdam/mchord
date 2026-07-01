@@ -76,6 +76,11 @@ export function ChordSlots({
             }
             onClick={activate}
             onKeyDown={(e) => {
+              // Only the slot container itself handles Enter/Space. A keydown
+              // that bubbled from a child control (edit / duration button) must
+              // not also trigger the slot — that would hijack the focused button
+              // and suppress its own activation (stopPropagation only covers clicks).
+              if (e.target !== e.currentTarget) return
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
                 activate()

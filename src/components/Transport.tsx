@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
+import { useDragCommit } from './useDragCommit'
 
 interface TransportProps {
   playing: boolean
   onToggle: () => void
   bpm: number
-  onBpm: (bpm: number) => void
+  onBpm: (bpm: number, transient?: boolean) => void
   bpmLocked: boolean
   effectiveBpm: number
   onGenerate: () => void
@@ -35,6 +36,7 @@ export function Transport({
   const [editingBpm, setEditingBpm] = useState(false)
   const [draft, setDraft] = useState('')
   const skipCommit = useRef(false)
+  const bpmSlider = useDragCommit(onBpm)
 
   const commitBpm = () => {
     setEditingBpm(false)
@@ -108,7 +110,8 @@ export function Transport({
           max={240}
           step={1}
           value={bpm}
-          onChange={(e) => onBpm(Number(e.target.value))}
+          onChange={(e) => bpmSlider.commit(Number(e.target.value))}
+          {...bpmSlider.dragProps}
           disabled={bpmLocked}
           aria-label="Tempo"
           aria-valuetext={`${Math.round(effectiveBpm)} BPM`}

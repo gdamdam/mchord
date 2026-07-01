@@ -59,6 +59,9 @@ export class Voice {
   private startedAt = 0
   /** True between noteOn and the moment the release envelope fully completes. */
   private active = false
+  /** Incremented on every deactivation schedule so a stale timer from a prior
+   *  note can't retire a voice that has since been reused. */
+  private inactiveGen = 0
   private params: ResolvedVoiceParams
 
   constructor(
@@ -288,10 +291,16 @@ export class Voice {
   }
 
   private scheduleInactive(when: number): void {
+    const gen = ++this.inactiveGen
     const ms = Math.max(0, (when - this.ctx.currentTime) * 1000) + 10
     setTimeout(() => {
-      // Only clear if nothing re-triggered this voice in the meantime.
-      if (this.oscs.length === 0 && this.subOsc === null) this.active = false
+      // Only the latest deactivation may retire the voice. A reused voice clears
+      // `oscs` synchronously when its own stop is scheduled, so the osc guard
+      // alone can't tell an older note's tail from the current one — the
+      // generation token does. Also require the oscillators to be gone.
+      if (gen === this.inactiveGen && this.oscs.length === 0 && this.subOsc === null) {
+        this.active = false
+      }
     }, ms)
   }
 

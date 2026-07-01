@@ -39,7 +39,7 @@ interface HarmonyControlsProps {
   onRhythm: (style: RhythmStyle) => void
   onDirection: (dir: Direction) => void
   onPreset: (id: PresetId) => void
-  onSwing: (swing: number) => void
+  onSwing: (swing: number, transient?: boolean) => void
   onLoopLength: (length: number) => void
 }
 

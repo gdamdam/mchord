@@ -129,7 +129,7 @@ export default function App() {
         playing={instrument.playing}
         onToggle={instrument.togglePlay}
         bpm={scene.bpm}
-        onBpm={(bpm) => dispatch({ type: 'setBpm', bpm })}
+        onBpm={(bpm, transient) => dispatch({ type: 'setBpm', bpm, transient })}
         bpmLocked={instrument.link.state.connected}
         effectiveBpm={instrument.effectiveBpm}
         onGenerate={() => dispatch({ type: 'generate' })}
@@ -157,7 +157,9 @@ export default function App() {
 
       <Macros
         macros={scene.macros}
-        onChange={(macro: keyof MacroValues, value) => dispatch({ type: 'setMacro', macro, value })}
+        onChange={(macro: keyof MacroValues, value, transient) =>
+          dispatch({ type: 'setMacro', macro, value, transient })
+        }
       />
 
       <HarmonyControls
@@ -175,7 +177,7 @@ export default function App() {
         onRhythm={(style) => dispatch({ type: 'setRhythm', style })}
         onDirection={(dir) => dispatch({ type: 'setDirection', dir })}
         onPreset={(preset) => dispatch({ type: 'setPreset', preset })}
-        onSwing={(swing) => dispatch({ type: 'setSwing', swing })}
+        onSwing={(swing, transient) => dispatch({ type: 'setSwing', swing, transient })}
         onLoopLength={(length) => dispatch({ type: 'setLoopLength', length })}
       />
 
