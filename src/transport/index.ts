@@ -17,7 +17,7 @@ export { playStyleEvents, SPLIT_STYLE_IDS } from './playStyles'
 export type { PlayStyleOpts } from './playStyles'
 
 // Scheduler + pure planner.
-export { Scheduler, planWindow, slotOrderIndex } from './scheduler'
+export { Scheduler, planWindow, slotOrderIndex, swingBeatSeconds } from './scheduler'
 export type {
   ScheduledNote,
   SchedStep,

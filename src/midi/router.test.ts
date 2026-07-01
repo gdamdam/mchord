@@ -325,6 +325,21 @@ describe('MidiRouter: hot-plug & disconnect', () => {
     expect(r.output.getPort()).toBeNull()
   })
 
+  it('does not rebind an output retained in the map with disconnected state', async () => {
+    const access = new FakeAccess()
+    const port = new FakeOutput('o1', 'Synth')
+    access.outputs.add(port)
+    installNavigator(access)
+    const r = new MidiRouter()
+    await r.init()
+    r.setOutput('o1')
+    r.output.noteOn({ midi: 60, velocity: 1 }, 0)
+    port.state = 'disconnected'
+    access.fireStateChange()
+    expect(r.output.getPort()).toBeNull()
+    expect(port.sent).toContainEqual([0x80, 60, 0])
+  })
+
   it('fires onPortsChanged on statechange', async () => {
     const access = new FakeAccess()
     installNavigator(access)

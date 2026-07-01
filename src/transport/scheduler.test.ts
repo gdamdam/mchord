@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { planWindow, slotOrderIndex, type PlanState, type SchedStep } from './scheduler'
+import {
+  planWindow,
+  slotOrderIndex,
+  swingBeatSeconds,
+  type PlanState,
+  type SchedStep,
+} from './scheduler'
 import type { Direction } from '../types'
 
 const triad = (root: number) => [root, root + 4, root + 7]
@@ -193,6 +199,11 @@ describe('planWindow — bar durations & ordering', () => {
 })
 
 describe('planWindow — swing & quantization boundaries', () => {
+  it('exposes the same swing conversion for stopped previews', () => {
+    expect(swingBeatSeconds(0.5, 0, 0.5)).toBeCloseTo(0.25)
+    expect(swingBeatSeconds(0.5, 1, 0.5)).toBeCloseTo(0.25 + 0.5 / 3)
+  })
+
   it('swing pushes off-beat onsets later in time', () => {
     const straight = planWindow(stateWith({ rhythm: 'pulse', motion: 0.5, swing: 0 }), 0, 2)
     const swung = planWindow(stateWith({ rhythm: 'pulse', motion: 0.5, swing: 1 }), 0, 2)

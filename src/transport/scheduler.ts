@@ -52,6 +52,8 @@ export interface PlanState {
   loopLength: number
   /** ctx time at which slot 0 (the first played step) began. */
   startTime: number
+  /** Optional slot forced to begin a restarted random sequence. */
+  randomFirstSlot?: number | null
 }
 
 /**
@@ -95,6 +97,35 @@ export function slotOrderIndex(
   }
 }
 
+/** Resolve random order after a forced first slot, preserving no-repeat behavior. */
+function randomIndexAfterFirst(n: number, count: number, seed: number, first: number): number {
+  if (count <= 1) return 0
+  const rng = makeRng(seed)
+  let prev = first
+  let idx = first
+  for (let i = 0; i <= n; i++) {
+    let pick = rng.int(count)
+    if (pick === prev) pick = (pick + 1 + rng.int(count - 1)) % count
+    idx = pick
+    prev = pick
+  }
+  return idx
+}
+
+function stateSlotIndex(state: PlanState, n: number, count: number): number {
+  const forced = state.randomFirstSlot
+  if (
+    state.direction === 'random' &&
+    forced !== null &&
+    forced !== undefined &&
+    forced >= 0 &&
+    forced < count
+  ) {
+    return n === 0 ? forced : randomIndexAfterFirst(n - 1, count, state.seed, forced)
+  }
+  return slotOrderIndex(n, count, state.direction, state.seed)
+}
+
 /** Non-null voicing for a step, else []. */
 function voicingOf(step: SchedStep | undefined): Voicing {
   return step?.voicing ?? []
@@ -112,7 +143,7 @@ export function planWindow(
   fromTime: number,
   toTime: number,
 ): ScheduledNote[] {
-  const { steps, bpm, beatsPerBar, swing, rhythm, motion, direction, seed, loopLength } = state
+  const { steps, bpm, beatsPerBar, swing, rhythm, motion, seed, loopLength } = state
   if (!steps.length || toTime <= fromTime) return []
 
   // The loop cycles the first `count` slots; the rest are parked (never played).
@@ -128,7 +159,7 @@ export function planWindow(
   // Safety bound: never loop forever on absurd inputs.
   const maxSlots = 100000
   while (n < maxSlots) {
-    const idx = slotOrderIndex(n, count, direction, seed)
+    const idx = stateSlotIndex(state, n, count)
     const step = steps[idx]
     const durBars = step?.durationBars ?? 1
     const slotLen = secondsPerBar(bpm, beatsPerBar) * durBars
@@ -154,7 +185,7 @@ export function planWindow(
       })
       for (const e of evs) {
         // Convert beat-domain onset to seconds, applying swing on off-beats.
-        const onOffset = swingSeconds(e.startBeat, swing, spb)
+        const onOffset = swingBeatSeconds(e.startBeat, swing, spb)
         const onTime = slotStart + onOffset
         if (onTime < fromTime || onTime >= toTime) continue
         const offTime = onTime + e.durBeats * spb
@@ -177,7 +208,7 @@ export function planWindow(
  * to keep arps/broken from being distorted, while their nearest eighth off-beat
  * still gets the swing push.
  */
-function swingSeconds(startBeat: number, swing: number, spb: number): number {
+export function swingBeatSeconds(startBeat: number, swing: number, spb: number): number {
   if (swing <= 0) return startBeat * spb
   // Is this onset exactly on an eighth grid position?
   const eighthIndex = startBeat * 2
@@ -242,6 +273,8 @@ export class Scheduler {
   private lastReportedSlotN = -1
   /** A queued live jump: slot index to jump to, and the ctx time to do it. */
   private pendingJump: { index: number; at: number } | null = null
+  /** A live random jump starts with this explicit slot, then resumes seeded random order. */
+  private randomFirstSlot: number | null = null
   private stepCbs: StepCb[] = []
 
   constructor(opts: SchedulerOpts) {
@@ -291,6 +324,7 @@ export class Scheduler {
 
   setDirection(dir: Direction): void {
     this.direction = dir
+    this.randomFirstSlot = null
   }
 
   setMotion(m: number): void {
@@ -313,6 +347,7 @@ export class Scheduler {
     this.scheduledUntil = t
     this.lastReportedSlotN = -1
     this.pendingJump = null
+    this.randomFirstSlot = null
     this._playing = true
     // Prime immediately, then on interval.
     this.tick()
@@ -385,6 +420,7 @@ export class Scheduler {
       seed: this.seed,
       loopLength: this.loopLength,
       startTime: this.startTime,
+      randomFirstSlot: this.randomFirstSlot,
     }
   }
 
@@ -396,7 +432,7 @@ export class Scheduler {
     let n = 0
     const maxSlots = 100000
     while (n < maxSlots) {
-      const idx = slotOrderIndex(n, count, this.direction, this.seed)
+      const idx = stateSlotIndex(this.planState(), n, count)
       const durBars = this.steps[idx]?.durationBars ?? 1
       const slotEnd = slotStart + secondsPerBar(this.bpm, this.beatsPerBar) * durBars
       if (t < slotEnd) return n
@@ -439,6 +475,17 @@ export class Scheduler {
    * (ordinal 0) but seed the order so it begins at the requested index.
    */
   private applyJump(index: number, at: number): void {
+    if (this.direction === 'random') {
+      // A seeded random stream is not guaranteed to visit every slot within any
+      // finite search bound. Make the requested slot an explicit new first step,
+      // then continue with the same seed while avoiding an immediate repeat.
+      this.randomFirstSlot = index
+      this.startTime = at
+      this.scheduledUntil = Math.max(this.scheduledUntil, at)
+      this.lastReportedSlotN = -1
+      return
+    }
+    this.randomFirstSlot = null
     // Rebase the timeline so the requested slot is sounding at `at`, while
     // keeping the direction's pattern intact. We find the first ordinal `found`
     // in the (deterministic) order whose slot === `index`, then shift startTime
@@ -473,7 +520,7 @@ export class Scheduler {
     if (n === this.lastReportedSlotN && this.pendingJumpUnchanged()) return
     this.lastReportedSlotN = n
     const index = this.steps.length
-      ? slotOrderIndex(n, this.count(), this.direction, this.seed)
+      ? stateSlotIndex(this.planState(), n, this.count())
       : 0
     const queued = this.pendingJump ? this.pendingJump.index : null
     for (const cb of this.stepCbs) cb({ index, queued })

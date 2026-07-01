@@ -16,6 +16,7 @@ import {
   linkQuantizeDelay,
   onLinkState,
   playStyleEvents,
+  swingBeatSeconds,
   secondsPerBeat,
   sendLinkPlaying,
   sendLinkTempo,
@@ -196,19 +197,19 @@ export function useInstrument(scene: SceneState): Instrument {
   // sched.playing synchronously and its own broadcast is absorbed here as a
   // no-op (followTransport is idempotent) — that plus the edge guard prevents an
   // echo loop. Following never re-sends a command to the bridge.
-  const lastLinkPlayingRef = useRef(false)
+  const lastLinkPlayingRef = useRef<boolean | null>(null)
   useEffect(() => {
     if (!linkState.connected) {
       // Link gone: reset the guard so a later reconnection re-syncs cleanly.
       // Local playback is untouched (transport runs fine without the bridge).
-      lastLinkPlayingRef.current = false
+      lastLinkPlayingRef.current = null
       return
     }
     const next = linkState.playing
+    const sched = schedulerRef.current
+    if (!sched) return // Do not consume the initial state before audio exists.
     if (lastLinkPlayingRef.current === next) return // no shared-transport edge
     lastLinkPlayingRef.current = next
-    const sched = schedulerRef.current
-    if (!sched) return // audio not started yet (needs a user gesture)
     const action = followTransport(next, sched.playing)
     if (action === 'start') {
       // Join the running session on the next shared bar; do NOT send Play back.
@@ -223,7 +224,7 @@ export function useInstrument(scene: SceneState): Instrument {
       setActiveSlot(null)
       setQueuedSlot(null)
     }
-  }, [linkState.connected, linkState.playing, engine])
+  }, [linkState.connected, linkState.playing, engine, started])
 
   // When we own tempo (no Link peer), advertise it to the bridge if present.
   useEffect(() => {
@@ -315,6 +316,10 @@ export function useInstrument(scene: SceneState): Instrument {
     const sched = schedulerRef.current
     if (!sched) return
     if (sched.playing) {
+      // Absorb the currently-observed shared state while our command travels to
+      // the bridge; otherwise the synchronization effect can undo this local
+      // action using a stale Link message.
+      if (linkState.connected) lastLinkPlayingRef.current = linkState.playing
       sched.stop()
       midiRef.current?.output.sendClockStop()
       setPlaying(false)
@@ -323,6 +328,7 @@ export function useInstrument(scene: SceneState): Instrument {
       // Only forward Stop if it changes the shared state (no echo / redundancy).
       if (shouldSendPlaying(linkState.playing, false)) sendLinkPlaying(false)
     } else {
+      if (linkState.connected) lastLinkPlayingRef.current = linkState.playing
       // Quantize the start to the next bar when a Link session is running.
       // linkQuantizeDelay() returns a *duration* (seconds to the next bar, on the
       // performance clock); adding that duration to engine.now() (the audio clock)
@@ -366,7 +372,7 @@ export function useInstrument(scene: SceneState): Instrument {
       })
       const t0 = engine.now()
       for (const e of evs) {
-        const on = t0 + e.startBeat * spb
+        const on = t0 + swingBeatSeconds(e.startBeat, s.swing, spb)
         sink.noteOn({ midi: e.midi, velocity: e.velocity }, on)
         sink.noteOff(e.midi, on + e.durBeats * spb)
       }

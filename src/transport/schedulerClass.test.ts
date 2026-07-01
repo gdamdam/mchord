@@ -142,6 +142,28 @@ describe('Scheduler class', () => {
     s.dispose()
   })
 
+  it('random direction always jumps to the requested slot even when the seed omits it', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps(
+      Array.from({ length: 8 }, (_, index) => ({
+        voicing: triad(60 + index),
+        durationBars: 1,
+      })),
+      { seed: 60 },
+    )
+    s.setTempo(120)
+    s.setDirection('random')
+    const steps: { index: number; queued: number | null }[] = []
+    s.onStep((info) => steps.push(info))
+    s.start(0)
+    advance(0.5)
+    // Seed 60 never produces slot 0 in the old bounded 40-position search.
+    s.triggerSlot(0, 'bar')
+    advance(2)
+    expect(steps.some((x) => x.index === 0 && x.queued === null)).toBe(true)
+    s.dispose()
+  })
+
   it('ignores triggerSlot for out-of-range indices', () => {
     const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
     s.setSteps([{ voicing: triad(60), durationBars: 1 }])

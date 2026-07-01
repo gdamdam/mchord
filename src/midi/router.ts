@@ -251,9 +251,13 @@ export class MidiRouter {
   }
 
   private reconcileOutput(): void {
-    const port =
+    const candidate =
       this.selectedOutputId && this.access
         ? this.access.outputs.get(this.selectedOutputId) ?? null
+        : null
+    const port =
+      candidate && (candidate.state === undefined || candidate.state === 'connected')
+        ? candidate
         : null
     // MidiOutput.setPort flushes held notes to the old port — no hung notes.
     this.output.setPort(port)
