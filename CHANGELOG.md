@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] — 2026-06-30
+
+### Added
+
+- **21 more play styles across 4 new groups.** Arp gains Converge, Diverge,
+  Thumb, and Octaves; new groups **Strum** (Downstroke, Up-Down, Harp Roll),
+  **Melodic** (Guide-Tone Comp, Top Line, Pedal + Line), **Ostinato** (Alberti
+  Bass, Gallop, Cell Roller), and **Euclidean** (E3/E5/E7); Split gains Ambient
+  Drone, Dubstep Sub, Downtempo Roll, Psy Roller, and DnB Stab — 37 styles total.
+  New lane primitives: strum offset, euclidean masks, extra arp orderings, and
+  explicit ostinato sequences.
+
+### Changed
+
+- **Custom cross-browser dropdowns** replace native `<select>`s so every menu
+  looks and behaves identically across browsers and OSes (accessible listbox:
+  keyboard nav, type-through, click-outside).
+- **All dropdowns are alphabetised** (numeric-aware, so numeric lists stay 1,2,…,10),
+  sorted within each category for grouped menus.
+- **Removed the "Start audio" splash** — audio now starts automatically on the
+  first interaction (pressing Play or triggering a chord).
+
 ## [1.2.0] — 2026-06-30
 
 ### Added
@@ -86,6 +108,7 @@ Initial release of the v0.1 instrument.
 - **Installable PWA** — offline-capable after the first visit, served at
   [mchord.mpump.live](https://mchord.mpump.live).
 
+[1.2.1]: https://github.com/gdamdam/mchord/releases/tag/v1.2.1
 [1.2.0]: https://github.com/gdamdam/mchord/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gdamdam/mchord/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gdamdam/mchord/releases/tag/v1.0.0

@@ -167,6 +167,28 @@ export const RHYTHM_STYLES = [
   'synth-drive',
   'lofi-broken',
   'garage-2step',
+  // v1.3 — extended arps, strum, melodic, ostinato, euclidean, more splits.
+  'arp-converge',
+  'arp-diverge',
+  'arp-thumb',
+  'arp-octaves',
+  'strum-folk',
+  'strum-updown',
+  'harp-roll',
+  'guide-comp',
+  'top-line',
+  'pedal-line',
+  'alberti',
+  'gallop',
+  'cell-roller',
+  'euclid-3',
+  'euclid-5',
+  'euclid-7',
+  'ambient-drone',
+  'dubstep-sub',
+  'downtempo-roll',
+  'psy-roller',
+  'dnb-stab',
 ] as const
 export type RhythmStyle = (typeof RHYTHM_STYLES)[number]
 

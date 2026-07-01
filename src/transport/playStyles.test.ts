@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { RHYTHM_STYLES } from '../types'
 import { playStyleEvents } from './playStyles'
 import { rhythmEvents } from './rhythm'
 
@@ -66,6 +67,34 @@ describe('playStyleEvents — split styles', () => {
     ] as const
     for (const s of splits) {
       expect(playStyleEvents(0, V, s, opts).length, s).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('playStyleEvents — extended categories', () => {
+  it('euclidean style has the expected pulse count in a bar (E(5,16) = 5)', () => {
+    expect(playStyleEvents(0, V, 'euclid-5', opts)).toHaveLength(5)
+  })
+
+  it('strum staggers a chord across time instead of stacking it on one onset', () => {
+    const evs = playStyleEvents(0, V, 'harp-roll', opts)
+    const firstBarOnsets = new Set(evs.filter((e) => e.startBeat < 2).map((e) => e.startBeat))
+    expect(firstBarOnsets.size).toBeGreaterThan(1) // notes spread, not simultaneous
+  })
+
+  it('arp order modes reorder the chord tones (converge = low, high, mid)', () => {
+    const first3 = playStyleEvents(0, V, 'arp-converge', opts).slice(0, 3).map((e) => e.midi)
+    expect(first3).toEqual([60, 67, 64]) // sorted [60,64,67] → converge
+  })
+
+  it('ostinato cycles an explicit chord-tone sequence (Alberti 0,2,1,2)', () => {
+    const first4 = playStyleEvents(0, V, 'alberti', opts).slice(0, 4).map((e) => e.midi)
+    expect(first4).toEqual([60, 67, 64, 67])
+  })
+
+  it('every style in RHYTHM_STYLES produces events for a normal triad', () => {
+    for (const style of RHYTHM_STYLES) {
+      expect(playStyleEvents(0, V, style, opts).length, style).toBeGreaterThan(0)
     }
   })
 })

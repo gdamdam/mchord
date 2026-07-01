@@ -9,6 +9,7 @@ import {
   type SavedScene,
 } from '../persistence'
 import { sceneToShareUrl } from '../sharing'
+import { Select } from './Select'
 import type { SceneState } from '../types'
 import type { LinkControls, MidiControls } from '../app/useInstrument'
 
@@ -156,51 +157,38 @@ export function AdvancedPanel({ scene, onLoadScene, midi, link, onPanic }: Advan
             </button>
           ) : (
             <>
-              <label className="panel__field">
-                <span className="field__label">Output</span>
-                <select
-                  className="field__select"
-                  value={midi.outputId ?? ''}
-                  onChange={(e) => midi.setOutput(e.target.value || null)}
-                >
-                  <option value="">None</option>
-                  {midi.outputs.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="panel__field">
-                <span className="field__label">Input (notes 36–43 trigger slots)</span>
-                <select
-                  className="field__select"
-                  value={midi.inputId ?? ''}
-                  onChange={(e) => midi.setInput(e.target.value || null)}
-                >
-                  <option value="">None</option>
-                  {midi.inputs.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Select
+                label="Output"
+                value={midi.outputId ?? ''}
+                onChange={(v) => midi.setOutput(v || null)}
+                options={[
+                  { value: '', label: 'None' },
+                  ...[...midi.outputs]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((o) => ({ value: o.id, label: o.name })),
+                ]}
+              />
+              <Select
+                label="Input (notes 36–43 trigger slots)"
+                value={midi.inputId ?? ''}
+                onChange={(v) => midi.setInput(v || null)}
+                options={[
+                  { value: '', label: 'None' },
+                  ...[...midi.inputs]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((o) => ({ value: o.id, label: o.name })),
+                ]}
+              />
               <div className="panel__row">
-                <label className="panel__field panel__field--inline">
-                  <span className="field__label">Channel</span>
-                  <select
-                    className="field__select"
-                    value={midi.channel}
-                    onChange={(e) => midi.setChannel(Number(e.target.value))}
-                  >
-                    {Array.from({ length: 16 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {i + 1}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select
+                  label="Channel"
+                  value={String(midi.channel)}
+                  onChange={(v) => midi.setChannel(Number(v))}
+                  options={Array.from({ length: 16 }, (_, i) => ({
+                    value: String(i),
+                    label: String(i + 1),
+                  }))}
+                />
                 <label className="checkbox">
                   <input
                     type="checkbox"

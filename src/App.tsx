@@ -6,7 +6,6 @@ import { ChordSlots } from './components/ChordSlots'
 import { HarmonyControls } from './components/HarmonyControls'
 import { Macros } from './components/Macros'
 import { ProgressionBrowser } from './components/ProgressionBrowser'
-import { StartGate } from './components/StartGate'
 import { TopBar } from './components/TopBar'
 import { Transport } from './components/Transport'
 import { createDefaultScene } from './persistence'
@@ -211,8 +210,6 @@ export default function App() {
           dispatch({ type: 'loadProgression', chords, mode: loadedMode })
         }
       />
-
-      {!instrument.started && <StartGate onStart={instrument.start} />}
 
       <footer className="app__footer">
         <span>mchord v{__APP_VERSION__}</span>

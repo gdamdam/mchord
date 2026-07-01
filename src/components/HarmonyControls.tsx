@@ -51,19 +51,25 @@ export function HarmonyControls(props: HarmonyControlsProps) {
           label="Key"
           value={String(props.keyRoot)}
           onChange={(v) => props.onKey(Number(v))}
-          options={ROOT_LABELS.map((label, i) => ({ value: String(i), label }))}
+          options={ROOT_LABELS.map((label, i) => ({ value: String(i), label })).sort((a, b) =>
+            a.label.localeCompare(b.label),
+          )}
         />
         <Select
           label="Mode"
           value={props.mode}
           onChange={(v) => props.onMode(v as Mode)}
-          options={MODES.map((m) => ({ value: m, label: MODE_LABELS[m] }))}
+          options={MODES.map((m) => ({ value: m, label: MODE_LABELS[m] })).sort((a, b) =>
+            a.label.localeCompare(b.label),
+          )}
         />
         <Select
           label="Sound"
           value={props.preset}
           onChange={(v) => props.onPreset(v as PresetId)}
-          options={PRESET_IDS.map((id) => ({ value: id, label: PRESETS[id].name }))}
+          options={PRESET_IDS.map((id) => ({ value: id, label: PRESETS[id].name })).sort((a, b) =>
+            a.label.localeCompare(b.label),
+          )}
         />
         <Select
           label="Style"
@@ -71,7 +77,9 @@ export function HarmonyControls(props: HarmonyControlsProps) {
           onChange={(v) => props.onRhythm(v as RhythmStyle)}
           groups={STYLE_GROUPS.map((g) => ({
             label: g.label,
-            options: g.ids.map((id) => ({ value: id, label: RHYTHM_LABELS[id] })),
+            options: g.ids
+              .map((id) => ({ value: id, label: RHYTHM_LABELS[id] }))
+              .sort((a, b) => a.label.localeCompare(b.label)),
           }))}
         />
       </div>

@@ -30,7 +30,15 @@ export interface PlayStyleOpts extends RhythmOpts {
 
 type LaneSource = 'root' | 'fifth' | 'chordTones' | 'guideTones' | 'top'
 type LaneMode = 'cycle' | 'chord'
-type LaneOrder = 'up' | 'down' | 'updown' | 'asPlayed' | 'random'
+type LaneOrder =
+  | 'up'
+  | 'down'
+  | 'updown'
+  | 'asPlayed'
+  | 'random'
+  | 'converge'
+  | 'diverge'
+  | 'thumb'
 
 interface Lane {
   source: LaneSource
@@ -45,6 +53,13 @@ interface Lane {
   steps: boolean[]
   /** Per-step extra octave offset (length 16, default 0). */
   octaveJump?: number[]
+  /** Cycle lanes: explicit chord-tone index cycle (ostinato). Indices past the
+   *  chord size wrap up an octave. Overrides `order`. */
+  sequence?: number[]
+  /** Chord lanes: spread the notes across this many beats (strum). */
+  strum?: number
+  /** Strum direction (default 'up' = low→high). 'alt' flips each trigger. */
+  strumDir?: 'up' | 'down' | 'alt'
   /** Gate length as a fraction of one step (>1 = held/overlap). */
   gate: number
   velocity: number
@@ -74,6 +89,25 @@ function jumps(map: Record<number, number>): number[] {
   const a = new Array<number>(STEPS_PER_BAR).fill(0)
   for (const k of Object.keys(map)) a[Number(k)] = map[Number(k)]
   return a
+}
+/**
+ * Euclidean rhythm mask E(k, n): k pulses spread as evenly as possible over n
+ * steps (Bresenham variant), rotated so a pulse lands on step 0.
+ */
+function euclid(k: number, n = STEPS_PER_BAR): boolean[] {
+  if (k <= 0) return new Array<boolean>(n).fill(false)
+  if (k >= n) return new Array<boolean>(n).fill(true)
+  const out: boolean[] = []
+  let bucket = 0
+  for (let i = 0; i < n; i++) {
+    bucket += k
+    if (bucket >= n) {
+      bucket -= n
+      out.push(true)
+    } else out.push(false)
+  }
+  const first = out.indexOf(true)
+  return out.map((_, i) => out[(i + first) % n])
 }
 
 // --- authored split styles ------------------------------------------------
@@ -127,6 +161,99 @@ const SPLIT_STYLES: Partial<Record<RhythmStyle, PlayStyleDef>> = {
     lanes: [
       { source: 'root', mode: 'cycle', octave: 0, steps: on(0, 3, 6, 10, 13), octaveJump: jumps({ 6: 1, 13: 1 }), gate: 0.5, velocity: 0.8 },
       { source: 'chordTones', mode: 'chord', octave: 0, steps: on(2, 6, 10, 14), gate: 0.3, velocity: 0.66 },
+    ],
+  },
+
+  // --- Strum ---
+  'strum-folk': {
+    lanes: [{ source: 'chordTones', mode: 'chord', octave: 0, steps: on(0, 4, 8, 12), strum: 0.05, strumDir: 'up', gate: 0.9, velocity: 0.72 }],
+  },
+  'strum-updown': {
+    lanes: [{ source: 'chordTones', mode: 'chord', octave: 0, steps: eighths(), strum: 0.04, strumDir: 'alt', gate: 0.55, velocity: 0.68 }],
+  },
+  'harp-roll': {
+    lanes: [{ source: 'chordTones', mode: 'chord', octave: 0, steps: on(0, 8), strum: 0.18, strumDir: 'up', gate: 1.4, velocity: 0.66 }],
+  },
+
+  // --- Melodic ---
+  'guide-comp': {
+    lanes: [{ source: 'guideTones', mode: 'cycle', order: 'asPlayed', octave: 0, steps: on(0, 3, 5, 8, 11, 13), gate: 0.8, velocity: 0.66 }],
+  },
+  'top-line': {
+    lanes: [{ source: 'top', mode: 'cycle', octave: 1, steps: on(0, 4, 7, 9, 12), gate: 0.7, velocity: 0.68 }],
+  },
+  'pedal-line': {
+    lanes: [
+      { source: 'root', mode: 'cycle', octave: 0, steps: on(0), gate: 16, velocity: 0.62 },
+      { source: 'chordTones', mode: 'cycle', order: 'up', octaveSpan: 2, octave: 1, steps: on(2, 4, 6, 10, 12, 14), gate: 0.55, velocity: 0.62 },
+    ],
+  },
+
+  // --- Ostinato ---
+  alberti: {
+    lanes: [{ source: 'chordTones', mode: 'cycle', sequence: [0, 2, 1, 2], octave: 0, steps: eighths(), gate: 0.5, velocity: 0.66 }],
+  },
+  gallop: {
+    lanes: [{ source: 'root', mode: 'cycle', octave: 0, steps: on(0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15), gate: 0.4, velocity: 0.76 }],
+  },
+  'cell-roller': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', sequence: [0, 1, 0, 2], octave: 0, steps: allSteps(), gate: 0.5, velocity: 0.6 }],
+  },
+
+  // --- Euclidean ---
+  'euclid-3': {
+    lanes: [{ source: 'root', mode: 'cycle', octave: 0, steps: euclid(3), gate: 0.6, velocity: 0.75 }],
+  },
+  'euclid-5': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', order: 'up', octave: 0, steps: euclid(5), gate: 0.5, velocity: 0.66 }],
+  },
+  'euclid-7': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', order: 'up', octave: 1, steps: euclid(7), gate: 0.4, velocity: 0.64 }],
+  },
+
+  // --- Arp (extended orders) ---
+  'arp-converge': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', order: 'converge', octave: 0, steps: eighths(), gate: 0.5, velocity: 0.68 }],
+  },
+  'arp-diverge': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', order: 'diverge', octave: 0, steps: eighths(), gate: 0.5, velocity: 0.68 }],
+  },
+  'arp-thumb': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', order: 'thumb', octave: 0, steps: eighths(), gate: 0.5, velocity: 0.68 }],
+  },
+  'arp-octaves': {
+    lanes: [{ source: 'chordTones', mode: 'cycle', order: 'up', octaveSpan: 2, octave: 0, steps: eighths(), gate: 0.5, velocity: 0.66 }],
+  },
+
+  // --- Split (more genres) ---
+  'ambient-drone': {
+    lanes: [
+      { source: 'root', mode: 'cycle', octave: -1, steps: on(0), gate: 16, velocity: 0.66 },
+      { source: 'chordTones', mode: 'chord', octave: 0, steps: on(0, 8), strum: 0.14, strumDir: 'up', gate: 6, velocity: 0.5 },
+    ],
+  },
+  'dubstep-sub': {
+    lanes: [
+      { source: 'root', mode: 'cycle', octave: -1, steps: on(0, 8), gate: 3, velocity: 0.72 },
+      { source: 'chordTones', mode: 'chord', octave: 0, steps: on(0, 2, 4, 5, 7, 9, 10, 12, 14, 15), gate: 0.3, velocity: 0.6 },
+    ],
+  },
+  'downtempo-roll': {
+    lanes: [
+      { source: 'root', mode: 'cycle', octave: -1, steps: on(0, 6, 8), gate: 2, velocity: 0.68 },
+      { source: 'chordTones', mode: 'cycle', sequence: [0, 2, 1, 2], octave: 0, steps: eighths(), gate: 0.6, velocity: 0.6 },
+    ],
+  },
+  'psy-roller': {
+    lanes: [
+      { source: 'root', mode: 'cycle', octave: -1, steps: roll(), gate: 0.35, velocity: 0.74 },
+      { source: 'fifth', mode: 'cycle', octave: 0, steps: on(2, 6, 10, 14), gate: 0.3, velocity: 0.6 },
+    ],
+  },
+  'dnb-stab': {
+    lanes: [
+      { source: 'root', mode: 'cycle', octave: -1, steps: on(0, 15), gate: 8, velocity: 0.72 },
+      { source: 'chordTones', mode: 'chord', octave: 0, steps: on(0, 8, 11), gate: 0.4, velocity: 0.64 },
     ],
   },
 }
@@ -185,12 +312,37 @@ function orderPool(pool: Midi[], order: LaneOrder): Midi[] {
       return [...sorted].reverse()
     case 'updown':
       return sorted.length <= 2 ? sorted : [...sorted, ...sorted.slice(1, -1).reverse()]
+    case 'converge':
+      return converge(sorted)
+    case 'diverge':
+      return converge(sorted).reverse()
+    case 'thumb': {
+      // Bass pedal before each ascending tone: 0,1, 0,2, 0,3 …
+      if (sorted.length <= 1) return sorted
+      const r: Midi[] = []
+      for (let k = 1; k < sorted.length; k++) r.push(sorted[0], sorted[k])
+      return r
+    }
     case 'asPlayed':
     case 'random':
       return pool
     default:
       return sorted
   }
+}
+
+/** Outside-in interleave: 0, m-1, 1, m-2, … */
+function converge(sorted: Midi[]): Midi[] {
+  const r: Midi[] = []
+  let i = 0
+  let j = sorted.length - 1
+  while (i <= j) {
+    r.push(sorted[i])
+    if (i !== j) r.push(sorted[j])
+    i++
+    j--
+  }
+  return r
 }
 
 /** MOTION densifies only chord-tone arp lanes (adds steps → never removes). */
@@ -238,6 +390,7 @@ function laneEvents(
   const bars = Math.ceil(totalBeats / beatsPerBar)
   const events: RhythmEvent[] = []
   let cursor = 0
+  let strumTrig = 0
 
   for (let bar = 0; bar < bars; bar++) {
     for (let s = 0; s < STEPS_PER_BAR; s++) {
@@ -248,12 +401,31 @@ function laneEvents(
       const dur = Math.max(0.02, lane.gate * beatPerStep)
       const vel = velocityFor(beat, beatsPerBar, lane.velocity)
       if (lane.mode === 'chord') {
-        for (const m of pool) events.push({ midi: m + jump, velocity: vel, startBeat: beat, durBeats: dur })
+        // Block, optionally strummed: stagger notes across `strum` beats.
+        const notes = [...pool].sort((a, b) => a - b)
+        const dir = lane.strumDir ?? 'up'
+        const seq =
+          dir === 'down' || (dir === 'alt' && strumTrig % 2 === 1) ? [...notes].reverse() : notes
+        strumTrig++
+        const spread = lane.strum ?? 0
+        const per = seq.length > 1 ? spread / (seq.length - 1) : 0
+        seq.forEach((m, k) => {
+          events.push({ midi: m + jump, velocity: vel, startBeat: beat + k * per, durBeats: dur })
+        })
       } else {
-        const midi =
-          (lane.order ?? 'up') === 'random'
-            ? ordered[rng.int(ordered.length)]
-            : ordered[cursor++ % ordered.length]
+        let midi: Midi
+        if (lane.sequence && lane.sequence.length) {
+          // Ostinato: cycle explicit chord-tone indices (wrapping octaves up).
+          const bank = [...pool].sort((a, b) => a - b)
+          const idx = lane.sequence[cursor % lane.sequence.length]
+          const wrap = ((idx % bank.length) + bank.length) % bank.length
+          midi = bank[wrap] + 12 * Math.floor(idx / bank.length)
+          cursor++
+        } else if ((lane.order ?? 'up') === 'random') {
+          midi = ordered[rng.int(ordered.length)]
+        } else {
+          midi = ordered[cursor++ % ordered.length]
+        }
         events.push({ midi: midi + jump, velocity: vel, startBeat: beat, durBeats: dur })
       }
     }

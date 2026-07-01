@@ -227,9 +227,15 @@ export function useInstrument(scene: SceneState): Instrument {
 
   // --- Public actions ---
 
-  const start = useCallback(async () => {
-    await engine.start()
-    if (!midiRef.current) midiRef.current = new MidiRouter()
+  // Coalesced, idempotent start. Called lazily on the first user gesture (Play
+  // or a slot trigger) — no separate "Start audio" splash needed.
+  const startPromiseRef = useRef<Promise<void> | null>(null)
+  const start = useCallback((): Promise<void> => {
+    if (schedulerRef.current) return Promise.resolve()
+    if (startPromiseRef.current) return startPromiseRef.current
+    startPromiseRef.current = (async () => {
+      await engine.start()
+      if (!midiRef.current) midiRef.current = new MidiRouter()
     const midiSink = new TimedMidiSink(midiRef.current.output, () => engine.now())
     const sink = new FanOutSink([engine, midiSink])
     dispatchSinkRef.current = sink
@@ -257,9 +263,12 @@ export function useInstrument(scene: SceneState): Instrument {
     engine.setPreset(s.preset)
     engine.setMacros(s.macros)
     setStarted(true)
+    })()
+    return startPromiseRef.current
   }, [engine])
 
-  const togglePlay = useCallback(() => {
+  const togglePlay = useCallback(async () => {
+    await start()
     const sched = schedulerRef.current
     if (!sched) return
     if (sched.playing) {
@@ -279,18 +288,19 @@ export function useInstrument(scene: SceneState): Instrument {
       setPlaying(true)
       sendLinkPlaying(true)
     }
-  }, [engine, linkState.connected])
+  }, [start, engine, linkState.connected])
 
   const triggerSlot = useCallback(
     (index: number) => {
       if (index < 0 || index >= SLOT_COUNT) return
-      const sched = schedulerRef.current
-      const sink = dispatchSinkRef.current
-      if (!sched || !sink) return
-      if (sched.playing) {
-        sched.triggerSlot(index, 'bar')
-        return
-      }
+      const run = () => {
+        const sched = schedulerRef.current
+        const sink = dispatchSinkRef.current
+        if (!sched || !sink) return
+        if (sched.playing) {
+          sched.triggerSlot(index, 'bar')
+          return
+        }
       // Stopped: preview ~1 bar of the current play style so you hear the
       // actual performance (bass + melody etc.), not just a block chord.
       const v = voicingsRef.current[index]
@@ -313,8 +323,11 @@ export function useInstrument(scene: SceneState): Instrument {
         sink.noteOn({ midi: e.midi, velocity: e.velocity }, on)
         sink.noteOff(e.midi, on + e.durBeats * spb)
       }
+      }
+      if (schedulerRef.current) run()
+      else void start().then(run)
     },
-    [engine, linkState.connected, linkState.tempo],
+    [start, engine, linkState.connected, linkState.tempo],
   )
 
   const panic = useCallback(() => {
