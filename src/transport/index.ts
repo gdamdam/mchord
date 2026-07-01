@@ -50,4 +50,9 @@ export {
   nextBoundaryTime,
   quantizeDelaySec,
   barSec,
+  projectBeat,
+  projectPhase,
+  followTransport,
+  shouldSendPlaying,
 } from './linkClock'
+export type { TransportAction } from './linkClock'

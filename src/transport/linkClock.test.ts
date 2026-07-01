@@ -5,6 +5,10 @@ import {
   nextDownbeatTime,
   nextBoundaryTime,
   quantizeDelaySec,
+  projectBeat,
+  projectPhase,
+  followTransport,
+  shouldSendPlaying,
   type LinkClockSnapshot,
 } from './linkClock'
 import type { LinkState } from './linkBridge'
@@ -84,5 +88,53 @@ describe('quantizeDelaySec', () => {
   })
   it('never negative', () => {
     expect(quantizeDelaySec(snap(), 'beat', true, 100)).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('projectBeat / projectPhase', () => {
+  it('projects the beat forward linearly from the message stamp', () => {
+    // 120bpm → 0.5s/beat. 1s after the msg = +2 beats.
+    expect(projectBeat(snap({ beat: 4, phase: 0 }), 1)).toBeCloseTo(6, 10)
+  })
+  it('projects and wraps phase within the bar', () => {
+    // phase 3 + 2 beats = 5 → wraps mod quantum(4) → 1
+    expect(projectPhase(snap({ phase: 3 }), 1)).toBeCloseTo(1, 10)
+  })
+  it('preserves fractional tempo (no rounding)', () => {
+    const s = snap({ bpm: 140.5, phase: 0 })
+    const beatSec = 60 / 140.5
+    // exactly one beat later → phase 1, beat +1
+    expect(projectPhase(s, beatSec)).toBeCloseTo(1, 10)
+    expect(projectBeat(s, beatSec)).toBeCloseTo(1, 10)
+  })
+})
+
+describe('followTransport — mirror the shared transport', () => {
+  it('connect/stay stopped does not start (both stopped → none)', () => {
+    expect(followTransport(false, false)).toBe('none')
+  })
+  it('connect while the session is already playing → start (join)', () => {
+    expect(followTransport(true, false)).toBe('start')
+  })
+  it('remote start → start (once); after we are playing it is idempotent', () => {
+    expect(followTransport(true, false)).toBe('start')
+    // the broadcast that our own start produces is absorbed as a no-op → no echo
+    expect(followTransport(true, true)).toBe('none')
+  })
+  it('remote stop while we are playing → stop', () => {
+    expect(followTransport(false, true)).toBe('stop')
+  })
+})
+
+describe('shouldSendPlaying — echo / redundancy guard', () => {
+  it('local Play while the session is stopped sends once', () => {
+    expect(shouldSendPlaying(false, true)).toBe(true)
+  })
+  it('local Play while the session is already playing sends nothing', () => {
+    expect(shouldSendPlaying(true, true)).toBe(false)
+  })
+  it('local Stop while playing sends once; redundant Stop is suppressed', () => {
+    expect(shouldSendPlaying(true, false)).toBe(true)
+    expect(shouldSendPlaying(false, false)).toBe(false)
   })
 })

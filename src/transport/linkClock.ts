@@ -28,7 +28,12 @@ export interface LinkClockSnapshot {
   phase: number
   /** Beats per bar (Link quantum). The bridge only reports 4/4 today. */
   quantum: number
-  /** ctx.currentTime captured when the Link message arrived. */
+  /** Real-seconds timestamp captured when the Link message arrived, in the SAME
+   *  clock domain callers later query with. Only ever used to compute *durations*
+   *  (boundary delays, projected beat/phase) relative to a same-domain `now`, so
+   *  those durations can be applied as offsets to any real-seconds clock (e.g. the
+   *  scheduler's ctx.currentTime). Keeping stamp + query in one domain is the
+   *  invariant that makes the projection correct. */
   tAtMsg: number
 }
 
@@ -102,4 +107,42 @@ export function quantizeDelaySec(
 ): number {
   if (grid === 'off' || !connected || !snapshot) return 0
   return Math.max(0, nextBoundaryTime(snapshot, grid, now) - now)
+}
+
+/** Project the absolute beat position at `now` from a snapshot. `now` must be in
+ *  the same real-seconds clock domain as `tAtMsg` (the scheduler's clock). Pure
+ *  linear projection — no per-tick smoothing; drift is reconciled only at musical
+ *  boundaries, never by replaying or restarting. */
+export function projectBeat(s: LinkClockSnapshot, now: number): number {
+  return s.beat + (now - s.tAtMsg) / beatSec(s)
+}
+
+/** Project the phase within the bar (0..quantum) at `now`. Same clock-domain rule
+ *  as {@link projectBeat}. Fractional tempo is preserved (beatSec uses raw bpm). */
+export function projectPhase(s: LinkClockSnapshot, now: number): number {
+  return mod(s.phase + (now - s.tAtMsg) / beatSec(s), s.quantum)
+}
+
+export type TransportAction = 'start' | 'stop' | 'none'
+
+/** Decide what the local scheduler should do to mirror the shared Link transport,
+ *  given the session's playing flag and our own current playing state. Idempotent:
+ *  matching states are a no-op, so joining a running session ('start') is the same
+ *  path as a fresh remote start, and following a remote change never bounces back
+ *  as a command (echo-safe). */
+export function followTransport(
+  linkPlaying: boolean,
+  localPlaying: boolean,
+): TransportAction {
+  if (linkPlaying && !localPlaying) return 'start'
+  if (!linkPlaying && localPlaying) return 'stop'
+  return 'none'
+}
+
+/** Whether a local transport toggle should be forwarded to the bridge — only when
+ *  it actually changes the shared state. Prevents redundant commands (e.g. pressing
+ *  Play while a peer is already playing) and the echo loop when we're just
+ *  following the session. */
+export function shouldSendPlaying(linkPlaying: boolean, requested: boolean): boolean {
+  return linkPlaying !== requested
 }

@@ -11,6 +11,7 @@ import {
   Scheduler,
   autoDetectLink,
   enableLink,
+  followTransport,
   getLinkState,
   linkQuantizeDelay,
   onLinkState,
@@ -18,6 +19,7 @@ import {
   secondsPerBeat,
   sendLinkPlaying,
   sendLinkTempo,
+  shouldSendPlaying,
   type LinkState,
 } from '../transport'
 import { voiceProgression } from '../harmony'
@@ -185,6 +187,41 @@ export function useInstrument(scene: SceneState): Instrument {
     enableLink(on)
   }, [])
 
+  // Follow the shared Link transport. We act only on a genuine *edge* in the
+  // session's playing flag (tracked in lastLinkPlayingRef), never on every 20Hz
+  // state message, so joining/stopping happens once. A local Play/Stop sets
+  // sched.playing synchronously and its own broadcast is absorbed here as a
+  // no-op (followTransport is idempotent) — that plus the edge guard prevents an
+  // echo loop. Following never re-sends a command to the bridge.
+  const lastLinkPlayingRef = useRef(false)
+  useEffect(() => {
+    if (!linkState.connected) {
+      // Link gone: reset the guard so a later reconnection re-syncs cleanly.
+      // Local playback is untouched (transport runs fine without the bridge).
+      lastLinkPlayingRef.current = false
+      return
+    }
+    const next = linkState.playing
+    if (lastLinkPlayingRef.current === next) return // no shared-transport edge
+    lastLinkPlayingRef.current = next
+    const sched = schedulerRef.current
+    if (!sched) return // audio not started yet (needs a user gesture)
+    const action = followTransport(next, sched.playing)
+    if (action === 'start') {
+      // Join the running session on the next shared bar; do NOT send Play back.
+      const delay = linkQuantizeDelay('bar')
+      sched.start(delay > 0 ? engine.now() + delay : undefined)
+      setPlaying(true)
+    } else if (action === 'stop') {
+      // Remote stop: halt immediately and flush notes; do NOT send Stop back.
+      sched.stop()
+      midiRef.current?.output.sendClockStop()
+      setPlaying(false)
+      setActiveSlot(null)
+      setQueuedSlot(null)
+    }
+  }, [linkState.connected, linkState.playing, engine])
+
   // When we own tempo (no Link peer), advertise it to the bridge if present.
   useEffect(() => {
     if (!linkState.connected) sendLinkTempo(scene.bpm)
@@ -280,7 +317,8 @@ export function useInstrument(scene: SceneState): Instrument {
       setPlaying(false)
       setActiveSlot(null)
       setQueuedSlot(null)
-      sendLinkPlaying(false)
+      // Only forward Stop if it changes the shared state (no echo / redundancy).
+      if (shouldSendPlaying(linkState.playing, false)) sendLinkPlaying(false)
     } else {
       // Quantize the start to the next bar when a Link session is running.
       // linkQuantizeDelay() returns a *duration* (seconds to the next bar, on the
@@ -289,7 +327,10 @@ export function useInstrument(scene: SceneState): Instrument {
       const delay = linkState.connected ? linkQuantizeDelay('bar') : 0
       sched.start(delay > 0 ? engine.now() + delay : undefined)
       setPlaying(true)
-      sendLinkPlaying(true)
+      // Send Play only if the session isn't already playing — joining a running
+      // peer must not re-issue a redundant command (bridge treats it as a no-op,
+      // but suppressing it here keeps the transport echo-free).
+      if (shouldSendPlaying(linkState.playing, true)) sendLinkPlaying(true)
     }
   }, [start, engine, linkState.connected])
 

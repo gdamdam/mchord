@@ -88,6 +88,20 @@ describe('slotOrderIndex — directions', () => {
   })
 })
 
+describe('planWindow — forward correction (no catch-up)', () => {
+  it('a window that starts mid-timeline emits only its own onsets, never backfilling skipped slots', () => {
+    // startTime 0, 3 hold slots at 2s each → bar onsets at 0,2,4,6,8…
+    // Simulate the clock having jumped forward (drift correction / tab wake):
+    // the scheduler only ever queries the *current* window, so the skipped
+    // onsets are gone for good — no burst of catch-up notes.
+    const notes = planWindow(stateWith({}), 5.0, 6.2)
+    const onTimes = [...new Set(notes.map((n) => n.onTime))].sort((a, b) => a - b)
+    expect(onTimes).toEqual([6]) // only the bar boundary inside the window
+    expect(onTimes.some((t) => t < 5.0)).toBe(false) // 0,2,4 are NOT replayed
+    expect(notes.every((n) => n.onTime >= 5.0 && n.onTime < 6.2)).toBe(true)
+  })
+})
+
 describe('planWindow — bar durations & ordering', () => {
   it('emits hold blocks at correct slot start times (forward)', () => {
     // 3 slots × 1 bar × 2s = slots start at 0,2,4
