@@ -157,6 +157,16 @@ export const RHYTHM_STYLES = [
   'arp-down',
   'arp-updown',
   'broken',
+  // Split styles (v1.2) — multi-lane bass + melody/arp performances. Appended so
+  // existing persisted/shared indices stay stable.
+  'bass-melody',
+  'house-bass-stab',
+  'techno-roll',
+  'trance-arp',
+  'dub-skank',
+  'synth-drive',
+  'lofi-broken',
+  'garage-2step',
 ] as const
 export type RhythmStyle = (typeof RHYTHM_STYLES)[number]
 

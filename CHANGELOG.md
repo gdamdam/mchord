@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-06-30
+
+### Added
+
+- **Play styles** — the chord can now be performed as **single notes**, not just
+  block chords/arps. Eight new multi-lane **Split** styles play a low bass voice
+  (the chord root) plus a moving melody/arp voice in a higher octave: Bass +
+  Melody, House Stab + Bass, Techno Roll, Trance Arp, Dub Skank, Synthwave Drive,
+  Lo-Fi Broken, Garage 2-Step. Melodic lanes ride the existing voice-leading so
+  single-note lines move smoothly between chords.
+- The **Style** selector (formerly "Rhythm") is now grouped Block / Arp / Split,
+  and auditioning a slot while stopped **previews ~1 bar of the current style**.
+
+### Changed
+
+- New style ids are appended to the existing set, so saved scenes and share links
+  keep working unchanged. MOTION now also drives arp density in the split styles.
+
 ## [1.1.0] — 2026-06-30
 
 ### Added
@@ -68,6 +86,7 @@ Initial release of the v0.1 instrument.
 - **Installable PWA** — offline-capable after the first visit, served at
   [mchord.mpump.live](https://mchord.mpump.live).
 
+[1.2.0]: https://github.com/gdamdam/mchord/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gdamdam/mchord/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gdamdam/mchord/releases/tag/v1.0.0
 [0.1.0]: https://github.com/gdamdam/mchord/releases/tag/v0.1.0

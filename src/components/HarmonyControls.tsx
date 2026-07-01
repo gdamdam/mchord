@@ -3,7 +3,6 @@ import {
   DIRECTIONS,
   MODES,
   PRESET_IDS,
-  RHYTHM_STYLES,
   SLOT_COUNT,
   VOICING_MODES,
   type Direction,
@@ -21,6 +20,7 @@ import {
   MODE_LABELS,
   RHYTHM_LABELS,
   ROOT_LABELS,
+  STYLE_GROUPS,
   VOICING_LABELS,
 } from './displayNames'
 
@@ -66,10 +66,13 @@ export function HarmonyControls(props: HarmonyControlsProps) {
           options={PRESET_IDS.map((id) => ({ value: id, label: PRESETS[id].name }))}
         />
         <Select
-          label="Rhythm"
+          label="Style"
           value={props.rhythm}
           onChange={(v) => props.onRhythm(v as RhythmStyle)}
-          options={RHYTHM_STYLES.map((r) => ({ value: r, label: RHYTHM_LABELS[r] }))}
+          groups={STYLE_GROUPS.map((g) => ({
+            label: g.label,
+            options: g.ids.map((id) => ({ value: id, label: RHYTHM_LABELS[id] })),
+          }))}
         />
       </div>
 

@@ -41,7 +41,25 @@ export const RHYTHM_LABELS: Record<RhythmStyle, string> = {
   'arp-down': 'Arp ↓',
   'arp-updown': 'Arp ↕',
   broken: 'Broken',
+  'bass-melody': 'Bass + Melody',
+  'house-bass-stab': 'House Stab + Bass',
+  'techno-roll': 'Techno Roll',
+  'trance-arp': 'Trance Arp',
+  'dub-skank': 'Dub Skank',
+  'synth-drive': 'Synthwave Drive',
+  'lofi-broken': 'Lo-Fi Broken',
+  'garage-2step': 'Garage 2-Step',
 }
+
+/** Grouping for the Style selector (Block / Arp / Split). */
+export const STYLE_GROUPS: { label: string; ids: RhythmStyle[] }[] = [
+  { label: 'Block', ids: ['hold', 'pulse', 'stab', 'offbeat'] },
+  { label: 'Arp', ids: ['arp-up', 'arp-down', 'arp-updown', 'broken'] },
+  {
+    label: 'Split (bass + melody)',
+    ids: ['bass-melody', 'house-bass-stab', 'techno-roll', 'trance-arp', 'dub-skank', 'synth-drive', 'lofi-broken', 'garage-2step'],
+  },
+]
 
 export const MACRO_LABELS = {
   tension: { name: 'Tension', hint: 'harmonic edge' },

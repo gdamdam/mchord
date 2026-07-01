@@ -13,12 +13,13 @@
  */
 import type {
   NoteSink,
+  PitchClass,
   Voicing,
   Direction,
   RhythmStyle,
 } from '../types'
 import { secondsPerBar, secondsPerBeat, swungBeatTime } from './clock'
-import { rhythmEvents } from './rhythm'
+import { playStyleEvents } from './playStyles'
 import { makeRng } from './rng'
 
 /** A fully-resolved note with absolute on/off ctx times. */
@@ -32,6 +33,8 @@ export interface ScheduledNote {
 /** One progression slot as the scheduler sees it. */
 export interface SchedStep {
   voicing: Voicing | null
+  /** Chord root (0–11) for bass lanes of split styles; null for a rest. */
+  root?: PitchClass | null
   durationBars: number
 }
 
@@ -142,11 +145,12 @@ export function planWindow(
     // This slot overlaps the window: materialise its events.
     const voicing = voicingOf(step)
     if (voicing.length) {
-      const evs = rhythmEvents(voicing, rhythm, {
+      const evs = playStyleEvents(step?.root ?? null, voicing, rhythm, {
         durationBars: durBars,
         beatsPerBar,
         swing,
         motion,
+        seed,
       })
       for (const e of evs) {
         // Convert beat-domain onset to seconds, applying swing on off-beats.
@@ -248,10 +252,14 @@ export class Scheduler {
   }
 
   setSteps(
-    steps: { voicing: Voicing | null; durationBars: number }[],
+    steps: { voicing: Voicing | null; root?: PitchClass | null; durationBars: number }[],
     opts?: SetStepsOpts,
   ): void {
-    this.steps = steps.map((s) => ({ voicing: s.voicing, durationBars: s.durationBars }))
+    this.steps = steps.map((s) => ({
+      voicing: s.voicing,
+      root: s.root ?? null,
+      durationBars: s.durationBars,
+    }))
     if (opts?.seed !== undefined) this.seed = opts.seed
   }
 

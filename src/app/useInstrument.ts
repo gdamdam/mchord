@@ -14,7 +14,8 @@ import {
   getLinkState,
   linkQuantizeDelay,
   onLinkState,
-  secondsPerBar,
+  playStyleEvents,
+  secondsPerBeat,
   sendLinkPlaying,
   sendLinkTempo,
   type LinkState,
@@ -26,8 +27,6 @@ import { FanOutSink, TimedMidiSink } from './sinks'
 
 /** MIDI input notes from this note up trigger slots 1..8 (C2 = 36). */
 const MIDI_TRIGGER_BASE = 36
-/** How long an auditioned chord rings when the transport is stopped. */
-const AUDITION_SECONDS = 1.6
 
 export interface MidiControls {
   ready: boolean
@@ -132,6 +131,7 @@ export function useInstrument(scene: SceneState): Instrument {
     if (!sched) return
     const steps = voicings.map((v, i) => ({
       voicing: v,
+      root: scene.slots[i]?.chord?.root ?? null,
       durationBars: scene.slots[i]?.durationBars ?? 1,
     }))
     sched.setSteps(steps, { seed: scene.seed })
@@ -246,7 +246,11 @@ export function useInstrument(scene: SceneState): Instrument {
     sched.setMotion(s.macros.motion)
     sched.setLoopLength(s.loopLength)
     sched.setSteps(
-      voicingsRef.current.map((v, i) => ({ voicing: v, durationBars: s.slots[i]?.durationBars ?? 1 })),
+      voicingsRef.current.map((v, i) => ({
+        voicing: v,
+        root: s.slots[i]?.chord?.root ?? null,
+        durationBars: s.slots[i]?.durationBars ?? 1,
+      })),
       { seed: s.seed },
     )
     schedulerRef.current = sched
@@ -287,19 +291,28 @@ export function useInstrument(scene: SceneState): Instrument {
         sched.triggerSlot(index, 'bar')
         return
       }
-      // Stopped: audition the chord as a held block.
+      // Stopped: preview ~1 bar of the current play style so you hear the
+      // actual performance (bass + melody etc.), not just a block chord.
       const v = voicingsRef.current[index]
       sink.allNotesOff()
       if (!v || v.length === 0) return
-      const t = engine.now()
       const s = sceneRef.current
       const bpm = linkState.connected ? linkState.tempo : s.bpm
-      const dur = Math.min(
-        AUDITION_SECONDS,
-        secondsPerBar(bpm) * (s.slots[index]?.durationBars ?? 1),
-      )
-      for (const midi of v) sink.noteOn({ midi, velocity: 0.82 }, t)
-      for (const midi of v) sink.noteOff(midi, t + dur)
+      const spb = secondsPerBeat(bpm)
+      const root = s.slots[index]?.chord?.root ?? null
+      const evs = playStyleEvents(root, v, s.rhythm, {
+        durationBars: 1,
+        beatsPerBar: 4,
+        swing: s.swing,
+        motion: s.macros.motion,
+        seed: s.seed,
+      })
+      const t0 = engine.now()
+      for (const e of evs) {
+        const on = t0 + e.startBeat * spb
+        sink.noteOn({ midi: e.midi, velocity: e.velocity }, on)
+        sink.noteOff(e.midi, on + e.durBeats * spb)
+      }
     },
     [engine, linkState.connected, linkState.tempo],
   )

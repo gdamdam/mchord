@@ -12,6 +12,10 @@ export { secondsPerBeat, secondsPerBar, swungBeatTime } from './clock'
 export { rhythmEvents } from './rhythm'
 export type { RhythmEvent, RhythmOpts } from './rhythm'
 
+// Play styles (multi-lane bass + melody performances; delegates originals).
+export { playStyleEvents, SPLIT_STYLE_IDS } from './playStyles'
+export type { PlayStyleOpts } from './playStyles'
+
 // Scheduler + pure planner.
 export { Scheduler, planWindow, slotOrderIndex } from './scheduler'
 export type {
