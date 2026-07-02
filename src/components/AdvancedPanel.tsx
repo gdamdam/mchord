@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  createDefaultScene,
   exportSceneJSON,
   importSceneJSON,
 } from '../persistence'
@@ -48,6 +49,12 @@ export function AdvancedPanel({ scene, onLoadScene, link, onPanic }: AdvancedPan
     setImportError('')
     setImportText('')
     onLoadScene(result)
+  }
+
+  const onReset = () => {
+    // Destructive: wipes the whole scene back to defaults, so confirm first.
+    if (!window.confirm('Reset everything to defaults? This clears the current scene.')) return
+    onLoadScene(createDefaultScene())
   }
 
   return (
@@ -101,6 +108,9 @@ export function AdvancedPanel({ scene, onLoadScene, link, onPanic }: AdvancedPan
           </p>
           <button type="button" className="btn btn--danger" onClick={onPanic}>
             Panic — all notes off
+          </button>
+          <button type="button" className="btn btn--danger" onClick={onReset}>
+            Reset all to defaults
           </button>
         </section>
       </div>
