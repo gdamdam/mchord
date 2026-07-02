@@ -52,5 +52,7 @@ export function createDefaultScene(): SceneState {
     macros: { tension: 0.4, spread: 0.4, motion: 0.4, color: 0.4 },
     // Fixed, arbitrary deterministic seed so the default scene is reproducible.
     seed: 0x5eed,
+    // No octave transposition by default.
+    octaveShift: 0,
   }
 }

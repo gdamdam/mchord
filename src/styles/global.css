@@ -495,6 +495,21 @@ body {
   margin-left: auto;
 }
 
+/* Octave up/down grouped with a compact shift readout between the buttons. */
+.octave {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.octave__value {
+  min-width: 1.6em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 550;
+  color: var(--text-dim, var(--text));
+}
+
 .btn {
   min-height: var(--touch);
   padding: 0 16px;

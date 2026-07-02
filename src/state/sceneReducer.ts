@@ -21,7 +21,7 @@ import type {
   SlotDuration,
   VoicingMode,
 } from '../types'
-import { SLOT_COUNT } from '../types'
+import { OCTAVE_SHIFT_MAX, OCTAVE_SHIFT_MIN, SLOT_COUNT } from '../types'
 
 /** Maximum number of undo steps kept. Bounds memory; older states are dropped. */
 export const MAX_HISTORY = 64
@@ -51,6 +51,7 @@ export type Action =
   | { type: 'setSwing'; swing: number; transient?: boolean }
   | { type: 'setPreset'; preset: PresetId }
   | { type: 'setMacro'; macro: keyof MacroValues; value: number; transient?: boolean }
+  | { type: 'shiftOctave'; delta: number }
   | { type: 'generate'; seed?: number }
   | { type: 'vary'; seed?: number }
   | { type: 'loadScene'; scene: SceneState }
@@ -84,6 +85,7 @@ const HISTORY_ACTIONS = new Set<Action['type']>([
   'setSwing',
   'setPreset',
   'setMacro',
+  'shiftOctave',
   'generate',
   'vary',
 ])
@@ -152,6 +154,14 @@ function reduceScene(scene: SceneState, action: Action): SceneState {
       return { ...scene, preset: action.preset }
     case 'setMacro':
       return { ...scene, macros: { ...scene.macros, [action.macro]: clamp(action.value, 0, 1) } }
+    case 'shiftOctave': {
+      const octaveShift = clamp(
+        scene.octaveShift + Math.round(action.delta),
+        OCTAVE_SHIFT_MIN,
+        OCTAVE_SHIFT_MAX,
+      )
+      return { ...scene, octaveShift }
+    }
     case 'generate': {
       const seed = action.seed ?? nextSeed(scene.seed)
       const slots = generateProgression({ keyRoot: scene.keyRoot, mode: scene.mode, seed })

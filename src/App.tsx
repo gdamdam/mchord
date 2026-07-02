@@ -212,6 +212,8 @@ export default function App() {
         effectiveBpm={instrument.effectiveBpm}
         onGenerate={() => dispatch({ type: 'generate' })}
         onVary={() => dispatch({ type: 'vary' })}
+        octaveShift={scene.octaveShift}
+        onOctaveShift={(delta) => dispatch({ type: 'shiftOctave', delta })}
         onUndo={() => dispatch({ type: 'undo' })}
         onRedo={() => dispatch({ type: 'redo' })}
         onOpenLibrary={() => setProgressionsOpen(true)}

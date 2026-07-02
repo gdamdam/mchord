@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { OCTAVE_SHIFT_MAX, OCTAVE_SHIFT_MIN } from '../types'
 import { useDragCommit } from './useDragCommit'
 
 interface TransportProps {
@@ -10,6 +11,8 @@ interface TransportProps {
   effectiveBpm: number
   onGenerate: () => void
   onVary: () => void
+  octaveShift: number
+  onOctaveShift: (delta: number) => void
   onUndo: () => void
   onRedo: () => void
   onOpenLibrary: () => void
@@ -26,6 +29,8 @@ export function Transport({
   effectiveBpm,
   onGenerate,
   onVary,
+  octaveShift,
+  onOctaveShift,
   onUndo,
   onRedo,
   onOpenLibrary,
@@ -128,6 +133,31 @@ export function Transport({
         <button type="button" className="btn" onClick={onGenerate} title="Generate (Shift+R)">
           Generate
         </button>
+        <div className="octave" role="group" aria-label="Octave">
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => onOctaveShift(-1)}
+            disabled={octaveShift <= OCTAVE_SHIFT_MIN}
+            title="Shift progression down an octave"
+            aria-label="Octave down"
+          >
+            Oct −
+          </button>
+          <span className="octave__value" title="Current octave shift">
+            {octaveShift > 0 ? `+${octaveShift}` : octaveShift}
+          </span>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => onOctaveShift(1)}
+            disabled={octaveShift >= OCTAVE_SHIFT_MAX}
+            title="Shift progression up an octave"
+            aria-label="Octave up"
+          >
+            Oct +
+          </button>
+        </div>
         <button type="button" className="btn btn--ghost" onClick={onUndo} disabled={!canUndo} title="Undo (⌘Z)">
           Undo
         </button>

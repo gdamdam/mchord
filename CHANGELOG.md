@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] — 2026-07-02
+
+### Added
+
+- **Octave up / down buttons** in the transport shift the whole progression up
+  or down by an octave (±2), with a live readout between them. The shift is a
+  persisted, undoable scene setting applied at voicing time (register anchor +
+  bounds move together), so chords stay octave-less. Scene schema bumped to v3
+  with a migration defaulting existing scenes to no shift.
+
+### Fixed
+
+- **Hung notes when changing key (or octave) while playing.** Note-offs are
+  keyed by MIDI number and derived from the current step list, so a mid-play
+  voicing change left the old pitches without a matching note-off — they hung
+  and accumulated. Held voices are now released before the new voicing takes
+  over.
+
 ## [1.2.1] — 2026-06-30
 
 ### Added

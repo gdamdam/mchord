@@ -141,6 +141,14 @@ export interface Slot {
 /** Number of progression slots. */
 export const SLOT_COUNT = 8
 
+/**
+ * Bounds for the global octave shift, in octaves. The shift offsets the voicing
+ * register anchor (center/min/max) by 12 semitones each. ±2 keeps the resulting
+ * MIDI window comfortably inside 0–127 at both extremes.
+ */
+export const OCTAVE_SHIFT_MIN = -2
+export const OCTAVE_SHIFT_MAX = 2
+
 export const DIRECTIONS = ['forward', 'reverse', 'pendulum', 'random'] as const
 export type Direction = (typeof DIRECTIONS)[number]
 
@@ -228,8 +236,9 @@ export interface MacroValues {
  * SceneState and add a migration in the persistence layer.
  *
  * v2: added `loopLength` (migration defaults it to SLOT_COUNT = full loop).
+ * v3: added `octaveShift` (migration defaults it to 0 = no shift).
  */
-export const SCENE_VERSION = 2
+export const SCENE_VERSION = 3
 
 /**
  * The complete performance scene. This is the unit that is persisted to
@@ -260,6 +269,12 @@ export interface SceneState {
   macros: MacroValues
   /** Deterministic seed for generation / variation / random direction. */
   seed: number
+  /**
+   * Global octave transposition of the whole progression, in octaves
+   * (OCTAVE_SHIFT_MIN..OCTAVE_SHIFT_MAX, 0 = no shift). Applied at voicing time
+   * by offsetting the register anchor — chords themselves stay octave-less.
+   */
+  octaveShift: number
 }
 
 // ---------------------------------------------------------------------------

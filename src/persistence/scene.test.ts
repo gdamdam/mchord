@@ -3,6 +3,8 @@ import {
   CHORD_FAMILIES,
   DIRECTIONS,
   MODES,
+  OCTAVE_SHIFT_MIN,
+  OCTAVE_SHIFT_MAX,
   PRESET_IDS,
   RHYTHM_STYLES,
   SCENE_VERSION,
@@ -34,6 +36,9 @@ function expectValidScene(s: SceneState): void {
     expect(s.macros[k]).toBeLessThanOrEqual(1)
   }
   expect(Number.isFinite(s.seed)).toBe(true)
+  expect(s.octaveShift).toBeGreaterThanOrEqual(OCTAVE_SHIFT_MIN)
+  expect(s.octaveShift).toBeLessThanOrEqual(OCTAVE_SHIFT_MAX)
+  expect(Number.isInteger(s.octaveShift)).toBe(true)
   expect(s.slots).toHaveLength(SLOT_COUNT)
   expect(s.loopLength).toBeGreaterThanOrEqual(1)
   expect(s.loopLength).toBeLessThanOrEqual(SLOT_COUNT)
@@ -198,6 +203,12 @@ describe('migrateScene', () => {
     const out = migrateScene({ version: 1, bpm: 110 })
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.loopLength).toBe(SLOT_COUNT)
+  })
+
+  it('migrates a v2 scene (no octaveShift) to a zero shift', () => {
+    const out = migrateScene({ version: 2, bpm: 110 })
+    expect(out.version).toBe(SCENE_VERSION)
+    expect(out.octaveShift).toBe(0)
   })
 
   it('migrates an explicit version 0', () => {

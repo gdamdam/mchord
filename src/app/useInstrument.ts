@@ -80,11 +80,15 @@ export function resolveEffectiveBpm(
 }
 
 function voicingOptionsFor(scene: SceneState): VoicingOptions {
+  // A global octave shift moves the whole register window (anchor + bounds)
+  // together — shifting only the center would just get folded back into the
+  // fixed [minMidi, maxMidi] range by the voice-leading pass.
+  const offset = scene.octaveShift * 12
   return {
     mode: scene.voicingMode,
-    center: 60,
-    minMidi: 40,
-    maxMidi: 84,
+    center: 60 + offset,
+    minMidi: 40 + offset,
+    maxMidi: 84 + offset,
     tension: scene.macros.tension,
     spread: scene.macros.spread,
     color: scene.macros.color,
@@ -123,6 +127,7 @@ export function useInstrument(scene: SceneState): Instrument {
       scene.slots,
       scene.voicingMode,
       scene.keyRoot,
+      scene.octaveShift,
       scene.macros.tension,
       scene.macros.spread,
       scene.macros.color,
@@ -150,6 +155,12 @@ export function useInstrument(scene: SceneState): Instrument {
       root: scene.slots[i]?.chord?.root ?? null,
       durationBars: scene.slots[i]?.durationBars ?? 1,
     }))
+    // Note-offs are keyed by midi and derived from the *current* steps, so when
+    // the voicing changes mid-play (e.g. a key or octave shift) the sounding
+    // pitches disappear from the step list and never get a matching noteOff —
+    // they hang and accumulate. Release everything before swapping steps; the
+    // next tick re-attacks the new voicing cleanly (same as stop()'s flush).
+    if (sched.playing) dispatchSinkRef.current?.allNotesOff()
     sched.setSteps(steps, { seed: scene.seed })
   }, [voicings, scene.slots, scene.seed])
 

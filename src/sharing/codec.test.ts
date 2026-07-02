@@ -28,6 +28,7 @@ function richScene(): SceneState {
     preset: 'glass',
     macros: { tension: 0.1, spread: 0.9, motion: 0.55, color: 0.25 },
     seed: 123456,
+    octaveShift: 0,
   }
 }
 

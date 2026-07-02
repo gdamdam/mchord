@@ -95,6 +95,18 @@ describe('sceneReducer', () => {
     expect(sceneReducer(a, { type: 'undo' }).scene.loopLength).toBe(s.scene.loopLength)
   })
 
+  it('shiftOctave accumulates, clamps to [-2, 2], and is undoable', () => {
+    const s = createInitialState()
+    const up = run(s, { type: 'shiftOctave', delta: 1 }, { type: 'shiftOctave', delta: 1 })
+    expect(up.scene.octaveShift).toBe(2)
+    // Clamp at the ceiling — a further +1 stays at 2.
+    expect(sceneReducer(up, { type: 'shiftOctave', delta: 1 }).scene.octaveShift).toBe(2)
+    const down = run(s, { type: 'shiftOctave', delta: -1 }, { type: 'shiftOctave', delta: -1 }, { type: 'shiftOctave', delta: -1 })
+    expect(down.scene.octaveShift).toBe(-2)
+    // Undoable: one step back from +2 returns to +1.
+    expect(sceneReducer(up, { type: 'undo' }).scene.octaveShift).toBe(1)
+  })
+
   it('loadProgression fills slots, sizes the loop, sets mode, and is undoable', () => {
     const s = createInitialState()
     const chords = [

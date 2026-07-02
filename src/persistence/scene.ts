@@ -12,6 +12,8 @@ import {
   CHORD_FAMILIES,
   DIRECTIONS,
   MODES,
+  OCTAVE_SHIFT_MIN,
+  OCTAVE_SHIFT_MAX,
   PRESET_IDS,
   RHYTHM_STYLES,
   SCENE_VERSION,
@@ -156,6 +158,7 @@ export function sanitizeScene(raw: unknown): SceneState {
     preset,
     macros: sanitizeMacros(record.macros),
     seed,
+    octaveShift: clampInt(record.octaveShift, OCTAVE_SHIFT_MIN, OCTAVE_SHIFT_MAX, fallback.octaveShift),
   }
 }
 
@@ -183,6 +186,9 @@ const MIGRATIONS: Record<number, Migration> = {
   // v1→v2: `loopLength` was added. Old scenes looped all 8 slots, so default to
   // SLOT_COUNT to preserve their behaviour (sanitizeScene clamps it).
   1: (raw) => ({ ...raw, version: 2, loopLength: SLOT_COUNT }),
+  // v2→v3: `octaveShift` was added. Old scenes had no transposition; default 0
+  // preserves their register (sanitizeScene clamps it).
+  2: (raw) => ({ ...raw, version: 3, octaveShift: 0 }),
 }
 
 /**
