@@ -216,6 +216,11 @@ export const PRESET_IDS = [
   'soft-organ',
   'foghorn',
   'uk-sub',
+  'tine-ep',
+  'string-ens',
+  'nylon-pluck',
+  'vibes',
+  'clav',
 ] as const
 export type PresetId = (typeof PRESET_IDS)[number]
 
