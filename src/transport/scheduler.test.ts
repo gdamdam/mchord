@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   planWindow,
+  planOffWindow,
   slotOrderIndex,
   swingBeatSeconds,
   type PlanState,
@@ -105,6 +106,28 @@ describe('planWindow — forward correction (no catch-up)', () => {
     expect(onTimes).toEqual([6]) // only the bar boundary inside the window
     expect(onTimes.some((t) => t < 5.0)).toBe(false) // 0,2,4 are NOT replayed
     expect(notes.every((n) => n.onTime >= 5.0 && n.onTime < 6.2)).toBe(true)
+  })
+})
+
+describe('planOffWindow — release lookahead', () => {
+  it('emits a held chord only when its release enters the window', () => {
+    const state = stateWith({})
+    expect(planOffWindow(state, 0, 0.1)).toEqual([])
+    const releases = planOffWindow(state, 1.9, 2.1)
+    expect(releases).toHaveLength(3)
+    expect(releases.every((note) => note.offTime === 2)).toBe(true)
+  })
+
+  it('finds authored notes whose gates extend beyond their slot', () => {
+    const state = stateWith({
+      rhythm: 'dnb-stab',
+      steps: [
+        { voicing: triad(60), root: 0, durationBars: 1 },
+        { voicing: triad(62), root: 2, durationBars: 1 },
+      ],
+    })
+    const releases = planOffWindow(state, 2, 3)
+    expect(releases.some((note) => note.onTime < 2 && note.offTime >= 2)).toBe(true)
   })
 })
 

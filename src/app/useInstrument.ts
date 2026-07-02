@@ -72,6 +72,13 @@ export interface Instrument {
   link: LinkControls
 }
 
+export function resolveEffectiveBpm(
+  sceneBpm: number,
+  link: Pick<LinkState, 'connected' | 'tempo'>,
+): number {
+  return link.connected ? link.tempo : sceneBpm
+}
+
 function voicingOptionsFor(scene: SceneState): VoicingOptions {
   return {
     mode: scene.voicingMode,
@@ -122,7 +129,7 @@ export function useInstrument(scene: SceneState): Instrument {
     ],
   )
 
-  const effectiveBpm = linkState.connected ? linkState.tempo : scene.bpm
+  const effectiveBpm = resolveEffectiveBpm(scene.bpm, linkState)
 
   // Keep the latest scene/voicings reachable from stable callbacks. Synced in an
   // effect (not during render) — the callbacks that read them run after commit.
@@ -289,7 +296,9 @@ export function useInstrument(scene: SceneState): Instrument {
       setQueuedSlot(queued)
     })
     const s = sceneRef.current
-    sched.setTempo(s.bpm)
+    // Read the bridge synchronously: Link may have connected before the audio
+    // scheduler existed, in which case the effective-BPM effect has already run.
+    sched.setTempo(resolveEffectiveBpm(s.bpm, getLinkState()))
     sched.setSwing(s.swing)
     sched.setRhythm(s.rhythm)
     sched.setDirection(s.direction)

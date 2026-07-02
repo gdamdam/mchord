@@ -196,6 +196,69 @@ describe('Scheduler class', () => {
     s.dispose()
   })
 
+  it('recalculates held-chord releases after a faster live tempo change', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([
+      { voicing: triad(60), durationBars: 1 },
+      { voicing: triad(62), durationBars: 1 },
+    ])
+    s.setTempo(120)
+    s.start(0)
+    advance(1)
+    s.setTempo(240)
+    advance(0.7)
+
+    const firstRelease = Math.min(...sink.offs.map((off) => off.time))
+    const secondOnset = Math.min(...sink.ons.filter((on) => on.note.midi === 62).map((on) => on.time))
+    expect(firstRelease).toBeCloseTo(secondOnset, 6)
+    expect(firstRelease).toBeLessThan(2)
+    s.dispose()
+  })
+
+  it('recalculates held-chord releases after a slower live tempo change', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([
+      { voicing: triad(60), durationBars: 1 },
+      { voicing: triad(62), durationBars: 1 },
+    ])
+    s.setTempo(120)
+    s.start(0)
+    advance(1)
+    s.setTempo(60)
+    advance(2.2)
+
+    const firstRelease = Math.min(...sink.offs.map((off) => off.time))
+    const secondOnset = Math.min(...sink.ons.filter((on) => on.note.midi === 62).map((on) => on.time))
+    expect(firstRelease).toBeCloseTo(secondOnset, 6)
+    expect(firstRelease).toBeGreaterThan(2)
+    s.dispose()
+  })
+
+  it('requantizes a queued chord jump when tempo changes', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([
+      { voicing: triad(60), durationBars: 1 },
+      { voicing: triad(62), durationBars: 1 },
+      { voicing: triad(64), durationBars: 1 },
+    ])
+    s.setTempo(120)
+    const seen: { index: number; queued: number | null; at: number }[] = []
+    s.onStep(({ index, queued }) => seen.push({ index, queued, at: clock }))
+    s.start(0)
+    advance(0.5)
+    s.triggerSlot(2, 'bar')
+    s.setTempo(60)
+    advance(2)
+    const jumpBeforeNewBoundary = seen.some(
+      (step) => step.index === 2 && step.queued === null && step.at >= 0.5,
+    )
+    expect(jumpBeforeNewBoundary).toBe(false)
+    advance(2)
+    const jump = seen.find((step) => step.index === 2 && step.queued === null && step.at >= 0.5)
+    expect(jump?.at).toBeGreaterThan(3)
+    s.dispose()
+  })
+
   it('setSeed makes random direction reproducible across two schedulers', () => {
     const mk = () => {
       const sk = new FakeSink()

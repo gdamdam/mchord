@@ -202,6 +202,70 @@ export function planWindow(
 }
 
 /**
+ * PURE release planner. Note-ons are planned when their onset enters the
+ * lookahead window, but releases are deliberately planned only when the
+ * release itself enters the window. Keeping long note-offs out of Web Audio's
+ * immutable future lets a live tempo change recalculate the remaining musical
+ * duration of held notes.
+ */
+export function planOffWindow(
+  state: PlanState,
+  fromTime: number,
+  toTime: number,
+): ScheduledNote[] {
+  const { steps, bpm, beatsPerBar, swing, rhythm, motion, seed, loopLength } = state
+  if (!steps.length || toTime <= fromTime) return []
+
+  const count = Math.max(1, Math.min(loopLength > 0 ? loopLength : steps.length, steps.length))
+  const out: ScheduledNote[] = []
+  const spb = secondsPerBeat(bpm)
+  // Current styles extend at most one bar beyond a slot. Four bars keeps ample
+  // headroom for future long gates while letting long-running sessions skip old
+  // slots without regenerating every historical event on every timer tick.
+  const maxReleaseTail = secondsPerBar(bpm, beatsPerBar) * 4
+  let slotStart = state.startTime
+  let n = 0
+  const maxSlots = 100000
+
+  // Events may extend beyond their slot (some authored gates intentionally
+  // overlap), so retain preceding slots whose possible release tails can still
+  // reach this window.
+  while (n < maxSlots && slotStart < toTime) {
+    const idx = stateSlotIndex(state, n, count)
+    const step = steps[idx]
+    const durBars = step?.durationBars ?? 1
+    const slotLen = secondsPerBar(bpm, beatsPerBar) * durBars
+    const slotEnd = slotStart + slotLen
+    if (slotEnd + maxReleaseTail < fromTime) {
+      slotStart = slotEnd
+      n++
+      continue
+    }
+    const voicing = voicingOf(step)
+    if (voicing.length) {
+      const evs = playStyleEvents(step?.root ?? null, voicing, rhythm, {
+        durationBars: durBars,
+        beatsPerBar,
+        swing,
+        motion,
+        seed,
+      })
+      for (const e of evs) {
+        const onTime = slotStart + swingBeatSeconds(e.startBeat, swing, spb)
+        const offTime = onTime + e.durBeats * spb
+        if (offTime < fromTime || offTime >= toTime) continue
+        out.push({ midi: e.midi, velocity: e.velocity, onTime, offTime })
+      }
+    }
+    slotStart = slotEnd
+    n++
+  }
+
+  out.sort((a, b) => a.offTime - b.offTime)
+  return out
+}
+
+/**
  * Convert a beat-domain onset into seconds with swing. We map the beat onset
  * onto the eighth-note grid used by clock.swungBeatTime: integer-and-half beats
  * are eighths; finer subdivisions (sixteenths, triplets) pass through straight
@@ -272,7 +336,7 @@ export class Scheduler {
   /** Active step bookkeeping for onStep callbacks. */
   private lastReportedSlotN = -1
   /** A queued live jump: slot index to jump to, and the ctx time to do it. */
-  private pendingJump: { index: number; at: number } | null = null
+  private pendingJump: { index: number; at: number; quantize: 'beat' | 'bar' | 'off' } | null = null
   /** A live random jump starts with this explicit slot, then resumes seeded random order. */
   private randomFirstSlot: number | null = null
   private stepCbs: StepCb[] = []
@@ -308,8 +372,16 @@ export class Scheduler {
     // (e.g. on a BPM-slider drag or an incoming Link tempo update). Since bar
     // length is inversely proportional to bpm, the rebase is a simple ratio.
     if (this._playing && bpm > 0 && this.bpm > 0 && bpm !== this.bpm) {
-      const now = this.now()
-      this.startTime = now - (now - this.startTime) * (this.bpm / bpm)
+      // The current lookahead has already been committed at the old tempo. Make
+      // the new tempo effective exactly where that window ends, preserving phase
+      // there; everything subsequently planned uses the new beat duration.
+      const effectiveAt = Math.max(this.now(), this.scheduledUntil)
+      this.startTime = effectiveAt - (effectiveAt - this.startTime) * (this.bpm / bpm)
+      this.bpm = bpm
+      if (this.pendingJump) {
+        this.pendingJump.at = this.quantizedTime(effectiveAt, this.pendingJump.quantize)
+      }
+      return
     }
     this.bpm = bpm
   }
@@ -374,16 +446,8 @@ export class Scheduler {
     // Only slots inside the loop can be jumped to; parked slots are ignored.
     if (index < 0 || index >= this.count()) return
     const now = this.now()
-    let at: number
-    if (quantize === 'off') {
-      at = now
-    } else {
-      const grid = quantize === 'beat' ? secondsPerBeat(this.bpm) : secondsPerBar(this.bpm, this.beatsPerBar)
-      const elapsed = now - this.startTime
-      const k = Math.floor(elapsed / grid) + 1
-      at = this.startTime + k * grid
-    }
-    this.pendingJump = { index, at }
+    const at = this.quantizedTime(now, quantize)
+    this.pendingJump = { index, at, quantize }
     this.emitStep()
   }
 
@@ -424,6 +488,16 @@ export class Scheduler {
     }
   }
 
+  private quantizedTime(now: number, quantize: 'beat' | 'bar' | 'off'): number {
+    if (quantize === 'off') return now
+    const grid = quantize === 'beat'
+      ? secondsPerBeat(this.bpm)
+      : secondsPerBar(this.bpm, this.beatsPerBar)
+    const elapsed = now - this.startTime
+    const k = Math.floor(elapsed / grid) + 1
+    return this.startTime + k * grid
+  }
+
   /** Index of the currently-sounding played-slot ordinal, given a ctx time. */
   private slotNAt(t: number): number {
     if (!this.steps.length || t < this.startTime) return 0
@@ -456,10 +530,14 @@ export class Scheduler {
 
     const from = Math.max(this.scheduledUntil, now)
     if (horizon > from) {
+      // Resolve releases first. When a held pitch is retriggered exactly at a
+      // chord boundary, AudioEngine can then bind the off to the old voice before
+      // the new voice is allocated.
+      const releases = planOffWindow(this.planState(), from, horizon)
+      for (const note of releases) this.dispatch.noteOff(note.midi, note.offTime)
       const notes = planWindow(this.planState(), from, horizon)
       for (const note of notes) {
         this.dispatch.noteOn({ midi: note.midi, velocity: note.velocity }, note.onTime)
-        this.dispatch.noteOff(note.midi, note.offTime)
       }
       this.scheduledUntil = horizon
     }
