@@ -179,6 +179,47 @@ export const PRESETS: Record<PresetId, PresetDef> = {
       reverbSend: 0.22,
     },
   },
+  // Ported from mpump's bass presets. mchord uses a plain biquad lowpass (no
+  // Moog ladder / filterDrive), so the resonance is scaled down from mpump's
+  // ladder values to stay stable, and gain is trimmed into mchord's headroom.
+  foghorn: {
+    id: 'foghorn',
+    name: 'Foghorn',
+    description: 'Deep dub sub — dark triangle, heavy sine sub, slow low cutoff.',
+    voice: {
+      oscType: 'triangle',
+      oscCount: 1,
+      detuneCents: 0,
+      subLevel: 0.8,
+      subType: 'sine',
+      filterCutoff: 350,
+      filterQ: 2.5,
+      filterEnvAmount: 0,
+      amp: { attack: 0.005, decay: 0.3, sustain: 0.9, release: 0.15 },
+      stereoSpread: 0,
+      gain: 0.4,
+      reverbSend: 0.05,
+    },
+  },
+  'uk-sub': {
+    id: 'uk-sub',
+    name: 'UK Sub',
+    description: 'UK garage bass — sawtooth with light filter sweep and sine sub.',
+    voice: {
+      oscType: 'sawtooth',
+      oscCount: 1,
+      detuneCents: 0,
+      subLevel: 0.6,
+      subType: 'sine',
+      filterCutoff: 700,
+      filterQ: 1.5,
+      filterEnvAmount: 2000,
+      amp: { attack: 0.008, decay: 0.2, sustain: 0.6, release: 0.1 },
+      stereoSpread: 0,
+      gain: 0.34,
+      reverbSend: 0.05,
+    },
+  },
 }
 
 /** Look up a preset by id, falling back to the first preset for safety. */

@@ -206,6 +206,8 @@ export const PRESET_IDS = [
   'hollow',
   'analog-brass',
   'soft-organ',
+  'foghorn',
+  'uk-sub',
 ] as const
 export type PresetId = (typeof PRESET_IDS)[number]
 
