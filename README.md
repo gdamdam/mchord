@@ -45,6 +45,7 @@
 - **Resume, save & share** — the working session autosaves for “Continue Last Session”; named sessions use versioned local persistence with migrations, readable JSON import/export, and self-contained share links — no backend.
 - **Optional MIDI in/out + clock** — sends the *actual voiced notes* (not root-position) with correct note-ownership and note-offs; channel select and 24-PPQN clock. Never required.
 - **Optional Ableton Link** — tempo-follow and quantised start via the companion **mpump** link-bridge; degrades gracefully when it's absent.
+- **Optional mbus publish** — the “bus” toggle in the top bar offers mchord's master output to the [mbus](https://mbus.mpump.live) patchbay as a source named `mchord` (tab-to-tab WebRTC via the same link-bridge, peer-to-peer, no server). Off by default; harmless without the bridge. Local mute doesn't cut the bus feed — like MIDI out, it only silences the browser monitor.
 - **Installable PWA** — network-first navigation, cache-first hashed assets, offline after one visit.
 
 ## Run locally
@@ -124,6 +125,7 @@ Everything is local. No account, no cookies, no telemetry, no fingerprinting. Th
 - The engine uses the real `AudioContext.sampleRate` and never assumes 44.1/48 kHz.
 - **Web MIDI** is requested only when you enable it, and is optional (Chromium-family browsers).
 - **Ableton Link** needs the companion **mpump** link-bridge running locally (`ws://localhost:19876`); without it the Link panel simply stays offline.
+- **mbus publish** rides the same link-bridge; without it the “bus” toggle just keeps retrying quietly and nothing is published. Audio flows tab-to-tab over WebRTC and never leaves the machine.
 - A PWA install does not provide background or lock-screen audio.
 
 ## Repository map
@@ -139,6 +141,7 @@ src/
     AudioEngine · Voice · MasterBus · presets · macros · voiceParams · dsp
   transport/          lookahead scheduler + rhythm + Ableton Link adapter
     scheduler · rhythm · clock · rng · link · linkBridge · linkClock
+    mbus/             vendored mbus-client (patchbay publish; see NOTICE)
   midi/               optional Web MIDI (router · ownership · parse · messages)
   persistence/        versioned scenes + migrations (localStorage)
   sharing/            backend-free share-link codec

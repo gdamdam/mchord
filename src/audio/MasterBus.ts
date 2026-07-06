@@ -124,6 +124,13 @@ export class MasterBus {
     return this.reverbConvolver
   }
 
+  /** Full processed master signal (post-duck, pre local-mute) for publishing to
+   *  the mbus patchbay. Pre-mute on purpose: like MIDI out, the bus feed keeps
+   *  playing when only the local browser monitor is muted. */
+  getPublishTap(): AudioNode {
+    return this.presetDuck
+  }
+
   /** Master output trim (user volume), 0..~1.2, click-free. */
   setOutputTrim(linear: number): void {
     const v = Math.max(0, Math.min(1.2, linear))

@@ -13,6 +13,7 @@
  */
 
 import type { Midi, NoteSink, PresetId, MacroValues, VoicedNote } from '../types'
+import { createMbusClient, type MbusClient, type Publication } from '../transport/mbus'
 import { MasterBus } from './MasterBus'
 import { Voice } from './Voice'
 import { getPreset } from './presets'
@@ -38,6 +39,14 @@ export class AudioEngine implements NoteSink {
   private localMuted = false
   /** Master output volume (0..1.2). Matches MasterBus outputTrim default. */
   private masterVolume = 0.9
+
+  // mbus publish: offer the master output to the mbus patchbay over the local
+  // link-bridge (see src/transport/mbus). Off by default; until enabled no
+  // client exists and no socket is opened, so behavior is unchanged. With the
+  // bridge absent the client just retries quietly in the background.
+  private mbus: MbusClient | null = null
+  private mbusPub: Publication | null = null
+  private mbusPublishWanted = false
 
   private presetId: PresetId = 'warm-poly'
   private macros: MacroValues = { tension: 0.5, spread: 0.5, motion: 0.5, color: 0.5 }
@@ -111,6 +120,10 @@ export class AudioEngine implements NoteSink {
       window.addEventListener('pageshow', this.onResumeHint)
     }
     ctx.addEventListener('statechange', this.onStateChange)
+
+    // Publish intent recorded before the context existed (toggle is normally
+    // reachable only post-start, but HMR/dispose can reorder that).
+    this.applyMbusPublish()
   }
 
   private async tryResume(): Promise<void> {
@@ -147,6 +160,32 @@ export class AudioEngine implements NoteSink {
   setMasterVolume(volume: number): void {
     this.masterVolume = volume
     this.bus?.setOutputTrim(volume)
+  }
+
+  /** Offer (or withdraw) the master output as an mbus source named 'mchord'. */
+  setMbusPublish(enabled: boolean): void {
+    this.mbusPublishWanted = enabled
+    this.applyMbusPublish()
+  }
+
+  get mbusPublishing(): boolean {
+    return this.mbusPublishWanted
+  }
+
+  /** Reconcile the publish intent with the live graph. Enable is deferred until
+   *  the bus exists (runStart re-applies); disable unannounces the source and
+   *  drops the bridge socket so "off" leaves nothing running. */
+  private applyMbusPublish(): void {
+    if (this.mbusPublishWanted) {
+      if (!this.bus || this.mbusPub) return
+      this.mbus ??= createMbusClient()
+      this.mbus.connect()
+      this.mbusPub = this.mbus.publishOutput(this.bus.getPublishTap(), 'mchord')
+    } else {
+      this.mbusPub?.stop()
+      this.mbusPub = null
+      this.mbus?.disconnect()
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -242,6 +281,10 @@ export class AudioEngine implements NoteSink {
       window.removeEventListener('pageshow', this.onResumeHint)
     }
     if (this.ctx) this.ctx.removeEventListener('statechange', this.onStateChange)
+    this.mbusPub?.stop()
+    this.mbusPub = null
+    this.mbus?.disconnect()
+    this.mbus = null
     for (const v of this.voices) v.dispose()
     this.voices = []
     this.bus?.dispose()

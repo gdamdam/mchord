@@ -27,6 +27,13 @@ author and suite. The following portions are derived from sibling projects:
 * The defensive persistence layer and the share-link codec patterns
   (src/persistence/, src/sharing/) — derived from **mgrains** and **mloop**.
 
+* The mbus tab-to-tab audio client (src/transport/mbus/) — vendored **verbatim**
+  from **mbus** (packages/mbus-client: client.ts, protocol.ts; the index.ts
+  re-export carries this credit). The suite has no shared package registry yet,
+  so the library is copied and credited rather than imported; it is kept
+  byte-for-byte with upstream so it stays trivially re-syncable — change it
+  upstream and re-copy, never edit here.
+
 * The Web Audio sound engine (src/audio/) — derived from **mdrone** and
   **mgrains**. Specifically: the master-bus chain blueprint, the gentle
   glue-compressor settings + safe gain staging, the AnalyserNode output-meter

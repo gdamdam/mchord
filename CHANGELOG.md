@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] — 2026-07-06
+
+### Added
+
+- **Publish to the mbus patchbay.** A “bus” toggle in the top bar offers
+  mchord's master output to the [mbus](https://mbus.mpump.live) patchbay as a
+  source named `mchord` — tab-to-tab WebRTC via the local link-bridge,
+  peer-to-peer, no server. Off by default: until enabled no socket is opened,
+  and without the bridge the toggle is harmless. The published feed is
+  post-master-chain but pre local-mute, so (like MIDI out) muting the browser
+  monitor doesn't cut the bus. The mbus-client is vendored verbatim under
+  `src/transport/mbus/` and credited in `NOTICE`.
+
 ## [1.3.5] — 2026-07-02
 
 ### Added

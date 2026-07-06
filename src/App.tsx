@@ -194,6 +194,8 @@ export default function App() {
         onSaveSession={setCurrentSessionName}
         localMuted={instrument.localMuted}
         onToggleLocalMute={instrument.toggleLocalMute}
+        mbusPublishing={instrument.mbusPublishing}
+        onToggleMbusPublish={instrument.toggleMbusPublish}
         masterVolume={instrument.masterVolume}
         onMasterVolume={instrument.setMasterVolume}
         midi={instrument.midi}

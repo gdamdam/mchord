@@ -17,6 +17,8 @@ interface TopBarProps {
   onSaveSession: (name: string) => void
   localMuted: boolean
   onToggleLocalMute: () => void
+  mbusPublishing: boolean
+  onToggleMbusPublish: () => void
   masterVolume: number
   onMasterVolume: (volume: number) => void
   midi: MidiControls
@@ -33,6 +35,8 @@ export function TopBar({
   onSaveSession,
   localMuted,
   onToggleLocalMute,
+  mbusPublishing,
+  onToggleMbusPublish,
   masterVolume,
   onMasterVolume,
   midi,
@@ -231,6 +235,20 @@ export function TopBar({
         >
           <span aria-hidden="true">{localMuted ? '🔇' : '🔊'}</span>
           {localMuted ? 'Local muted' : 'Local audio'}
+        </button>
+        <button
+          type="button"
+          className={`mbus-btn${mbusPublishing ? ' is-on' : ''}`}
+          aria-pressed={mbusPublishing}
+          title={
+            mbusPublishing
+              ? 'Publishing to the mbus patchbay (via the local link-bridge); local mute does not affect the bus feed'
+              : 'Publish mchord’s output to the mbus patchbay (needs the local link-bridge; harmless without it)'
+          }
+          onClick={onToggleMbusPublish}
+        >
+          <span className="mbus-btn__dot" aria-hidden="true" />
+          {mbusPublishing ? 'bus on' : 'bus'}
         </button>
         <span
           className={`link-pill${link.connected ? ' is-on' : ''}`}
