@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] — 2026-07-06
+
+### Fixed
+
+- **Vendored mbus-client re-synced** (upstream 0.1.1): a false `bridge-too-old`
+  under background-tab timer throttling was terminal — the client disabled
+  itself and never retried, so the "bus" publish silently stopped working until
+  reload. It now keeps retrying and recovers when the bridge answers.
+
 ## [1.4.1] — 2026-07-06
 
 ### Added
