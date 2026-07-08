@@ -1,4 +1,6 @@
+import { useRef, type ChangeEvent } from 'react'
 import { PRESETS } from '../audio'
+import { TUNING_PRESETS, sclTextToTuning } from '../tuning'
 import {
   DIRECTIONS,
   MODES,
@@ -10,6 +12,7 @@ import {
   type PitchClass,
   type PresetId,
   type RhythmStyle,
+  type SceneTuning,
   type VoicingMode,
 } from '../types'
 import { Segmented } from './Segmented'
@@ -31,6 +34,7 @@ interface HarmonyControlsProps {
   rhythm: RhythmStyle
   direction: Direction
   preset: PresetId
+  tuning: SceneTuning
   swing: number
   loopLength: number
   onKey: (root: PitchClass) => void
@@ -39,11 +43,45 @@ interface HarmonyControlsProps {
   onRhythm: (style: RhythmStyle) => void
   onDirection: (dir: Direction) => void
   onPreset: (id: PresetId) => void
+  onTuning: (tuning: SceneTuning) => void
   onSwing: (swing: number, transient?: boolean) => void
   onLoopLength: (length: number) => void
 }
 
+/** Sentinel option value that opens the `.scl` file picker instead of selecting. */
+const IMPORT_SCL = '__import_scl__'
+
 export function HarmonyControls(props: HarmonyControlsProps) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const { tuning, onTuning } = props
+
+  // Show the active tuning even when it's an imported/custom one not in the
+  // builtin list, then the builtins, then the Import action.
+  const isBuiltin = TUNING_PRESETS.some((t) => t.name === tuning.name)
+  const tuningOptions = [
+    ...(isBuiltin ? [] : [{ value: tuning.name, label: tuning.name }]),
+    ...TUNING_PRESETS.map((t) => ({ value: t.name, label: t.name })),
+    { value: IMPORT_SCL, label: 'Import .scl…' },
+  ]
+
+  const onTuningChange = (value: string) => {
+    if (value === IMPORT_SCL) {
+      fileRef.current?.click()
+      return
+    }
+    const preset = TUNING_PRESETS.find((t) => t.name === value)
+    if (preset) onTuning({ name: preset.name, centsOffset: [...preset.centsOffset] })
+  }
+
+  const onSclFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-importing the same file
+    if (!file) return
+    const parsed = sclTextToTuning(await file.text())
+    // A non-12-note or malformed file is silently ignored (12-tone scope only).
+    if (parsed) onTuning(parsed)
+  }
+
   return (
     <section className="controls" aria-label="Harmony and sound">
       <div className="controls__row">
@@ -62,6 +100,15 @@ export function HarmonyControls(props: HarmonyControlsProps) {
           options={MODES.map((m) => ({ value: m, label: MODE_LABELS[m] })).sort((a, b) =>
             a.label.localeCompare(b.label),
           )}
+        />
+        <Select label="Tuning" value={tuning.name} onChange={onTuningChange} options={tuningOptions} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".scl"
+          hidden
+          aria-hidden="true"
+          onChange={onSclFile}
         />
         <Select
           label="Sound"

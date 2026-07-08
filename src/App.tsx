@@ -251,6 +251,7 @@ export default function App() {
         rhythm={scene.rhythm}
         direction={scene.direction}
         preset={scene.preset}
+        tuning={scene.tuning}
         swing={scene.swing}
         loopLength={scene.loopLength}
         onKey={(root) => dispatch({ type: 'setKey', root })}
@@ -259,6 +260,7 @@ export default function App() {
         onRhythm={(style) => dispatch({ type: 'setRhythm', style })}
         onDirection={(dir) => dispatch({ type: 'setDirection', dir })}
         onPreset={(preset) => dispatch({ type: 'setPreset', preset })}
+        onTuning={(tuning) => dispatch({ type: 'setTuning', tuning })}
         onSwing={(swing, transient) => dispatch({ type: 'setSwing', swing, transient })}
         onLoopLength={(length) => dispatch({ type: 'setLoopLength', length })}
       />
