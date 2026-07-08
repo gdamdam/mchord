@@ -34,6 +34,16 @@ author and suite. The following portions are derived from sibling projects:
   byte-for-byte with upstream so it stays trivially re-syncable — change it
   upstream and re-copy, never edit here.
 
+* The portable tuning core (src/vendor/tuning-core/: model.ts, scala.ts,
+  builtins.ts) — vendored **verbatim** from **mdrone** (src/tuning/), each file
+  carrying a credit header with the upstream path + short SHA. As with the mbus
+  client, the suite has no shared package registry, so the pure, framework-free
+  tuning model, the Scala `.scl`/`.kbm` parsers, and the builtin tuning library
+  are copied and credited rather than imported, kept byte-for-byte re-syncable
+  via `npm run vendored:sync` (scripts/sync-vendored.mjs) — change it upstream
+  and re-copy, never edit here. mchord's own 12-note microtuning bridge that
+  consumes this core lives in src/tuning/.
+
 * The Web Audio sound engine (src/audio/) — derived from **mdrone** and
   **mgrains**. Specifically: the master-bus chain blueprint, the gentle
   glue-compressor settings + safe gain staging, the AnalyserNode output-meter

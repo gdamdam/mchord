@@ -10,9 +10,9 @@
 ┛┗┗┗┛┗┗┛┛ ┗┻
 </pre>
 
-[![version](https://img.shields.io/badge/version-1.4.5-6c8f3a)](./package.json)
+[![version](https://img.shields.io/badge/version-1.4.6-6c8f3a)](./package.json)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](./LICENSE)
-[![tests](https://img.shields.io/badge/tests-338%20passing-2ea043)](#verification)
+[![tests](https://img.shields.io/badge/tests-385%20passing-2ea043)](#verification)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](./tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
@@ -42,6 +42,7 @@
 - **Four performance macros** — Tension · Spread · Motion · Color — each sweeps a curated group of voicing and synth parameters.
 - **37 play styles in 7 groups** — Block, Arp (up/down/updown/broken + converge/diverge/thumb/octaves), Strum, Melodic (guide-tone/top-line/pedal), Ostinato (Alberti/gallop/cell), Euclidean (E3/E5/E7), and **Split (bass + melody)** — performances that play the chord as a low bass voice plus a moving melody/arp in a different octave (house, techno, trance, dub, synthwave, lo-fi, garage, ambient, dubstep, downtempo, psy, DnB). All responsive to BPM, swing, and Motion, with forward / reverse / pendulum / seeded-random playback.
 - **Built-in polyphonic synth** — eight authored presets and four macros over a native Web Audio voice graph (detuned oscillators, filter + ADSR, stereo spread) into a glue compressor and a native master limiter. Click-free preset changes, panic, no hung notes.
+- **Microtuning (12-note)** — pick a temperament (just intonation, meantone, Werckmeister/Kirnberger well-temperaments, maqam/pelog/slendro, EDOs, and more) or import your own 12-tone `.scl` (Scala) file; the chosen tuning rides along in save/share. Retunes only the final pitch→Hz mapping, so the harmony engine is untouched and 12-TET is the byte-identical default. The tuning core is vendored verbatim from [mdrone](https://mdrone.mpump.live) (`src/vendor/tuning-core`; see NOTICE).
 - **Resume, save & share** — the working session autosaves for “Continue Last Session”; named sessions use versioned local persistence with migrations, readable JSON import/export, and self-contained share links — no backend.
 - **Optional MIDI in/out + clock** — sends the *actual voiced notes* (not root-position) with correct note-ownership and note-offs; channel select and 24-PPQN clock. Never required.
 - **Optional Ableton Link** — tempo-follow and quantised start via the companion **mpump** link-bridge; degrades gracefully when it's absent.
@@ -68,7 +69,9 @@ Open the URL Vite prints — audio starts on your first interaction (pressing Pl
 | `npm run test` | Vitest (run once) |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run typecheck` | Type-check without emit |
-| `npm run check` | **typecheck + lint + test + build** (the full gate) |
+| `npm run vendored:check` | Verify `src/vendor/tuning-core` matches `../mdrone` |
+| `npm run vendored:sync` | Re-vendor the tuning core from `../mdrone` |
+| `npm run check` | **vendored:check + typecheck + lint + test + build** (the full gate) |
 
 ## Keyboard
 
@@ -110,7 +113,7 @@ See [`docs/architecture.md`](./docs/architecture.md) for detail.
 ## Verification
 
 ```bash
-npm run check   # typecheck + lint + 338 tests + production build
+npm run check   # vendored:check + typecheck + lint + 385 tests + production build
 ```
 
 Tests are deterministic and live next to the code (scales, chords, spelling, voice-leading determinism, generation, reducer + undo, scheduler planning, rhythm, MIDI bytes + note ownership, persistence migrations, share round-trips, keyboard map). Vitest runs in a Node environment, so live audio is covered by the manual QA checklist, not unit tests.
@@ -139,6 +142,8 @@ src/
     scales · chords · spelling · labels · palette · voiceLeading · generation
   audio/              native Web Audio engine
     AudioEngine · Voice · MasterBus · presets · macros · voiceParams · dsp
+  tuning/             12-note microtuning bridge (cents-offset table, .scl import)
+  vendor/tuning-core  tuning model + Scala + builtins, vendored from mdrone
   transport/          lookahead scheduler + rhythm + Ableton Link adapter
     scheduler · rhythm · clock · rng · link · linkBridge · linkClock
     mbus/             vendored mbus-client (patchbay publish; see NOTICE)
