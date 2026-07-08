@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "vendored:check": "node scripts/sync-vendored.mjs",
+    "vendored:sync": "node scripts/sync-vendored.mjs --sync",
+    "check": "npm run vendored:check && npm run typecheck && npm run lint && npm run test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
