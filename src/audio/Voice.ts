@@ -14,7 +14,8 @@
  * mdrone master-bus / voice design (AGPL-3.0-or-later). See NOTICE.
  */
 
-import { centsToRatio, clamp, midiToFreq, sanitizeADSR, velocityToGain } from './dsp'
+import { centsToRatio, clamp, sanitizeADSR, velocityToGain } from './dsp'
+import { tunedFreq, zeroCents } from '../tuning'
 import type { ResolvedVoiceParams } from './voiceParams'
 
 /** A very small fade used when stealing / hard-stopping a voice, in seconds. */
@@ -63,6 +64,9 @@ export class Voice {
    *  note can't retire a voice that has since been reused. */
   private inactiveGen = 0
   private params: ResolvedVoiceParams
+  /** Active 12-note microtuning as per-pitch-class cents offsets (all-zero =
+   *  12-TET). Retunes the base frequency at noteOn; unset ⇒ standard tuning. */
+  private tuningCents: number[] = zeroCents()
 
   constructor(
     ctx: AudioContext,
@@ -136,6 +140,13 @@ export class Voice {
     }
   }
 
+  /** Set the active 12-note microtuning (per-pitch-class cents offsets). Applies
+   *  to subsequently-triggered notes, like a preset change — a sounding voice
+   *  keeps its pitch until it is re-triggered. */
+  setTuning(centsOffset: readonly number[]): void {
+    this.tuningCents = centsOffset.slice(0, 12)
+  }
+
   /**
    * Start (or retrigger) this voice on `midi` at `velocity`, scheduled at `time`
    * (ctx.currentTime seconds). Builds fresh oscillators, schedules the amp and
@@ -154,7 +165,9 @@ export class Voice {
     this.active = true
     this.reverbSend.gain.setValueAtTime(p.reverbSend, t)
 
-    const baseFreq = midiToFreq(midi)
+    // Apply the active microtuning here — the only pitch→Hz mapping in the voice.
+    // All-zero cents ⇒ midiToFreq(midi) exactly (12-TET regression guard).
+    const baseFreq = tunedFreq(midi, this.tuningCents)
     const count = clamp(Math.round(p.oscCount), 1, 3)
 
     // Detune unison copies symmetrically around the centre frequency.

@@ -233,6 +233,22 @@ export interface MacroValues {
 }
 
 // ---------------------------------------------------------------------------
+// Tuning (12-note microtuning applied to the chromatic pitch classes)
+// ---------------------------------------------------------------------------
+
+/**
+ * A 12-note microtuning. `centsOffset[pc]` is added (in cents) to the 12-TET
+ * frequency of pitch class `pc` (pc = midi % 12); the array is always length 12.
+ * All-zero is exactly 12-TET, so it is the byte-identical default. `name` is the
+ * display label (a builtin's name or an imported `.scl`'s description). This is
+ * the only tuning surface mchord carries — arbitrary-N scales are out of scope.
+ */
+export interface SceneTuning {
+  name: string
+  centsOffset: number[]
+}
+
+// ---------------------------------------------------------------------------
 // Scene (the complete, serializable performance state)
 // ---------------------------------------------------------------------------
 
@@ -242,8 +258,9 @@ export interface MacroValues {
  *
  * v2: added `loopLength` (migration defaults it to SLOT_COUNT = full loop).
  * v3: added `octaveShift` (migration defaults it to 0 = no shift).
+ * v4: added `tuning` (migration defaults it to 12-TET = all-zero, byte-identical).
  */
-export const SCENE_VERSION = 3
+export const SCENE_VERSION = 4
 
 /**
  * The complete performance scene. This is the unit that is persisted to
@@ -280,6 +297,11 @@ export interface SceneState {
    * by offsetting the register anchor — chords themselves stay octave-less.
    */
   octaveShift: number
+  /**
+   * Active 12-note microtuning. Retunes the final pitch→Hz mapping only; the
+   * harmony/voice-leading engine is unaffected. Defaults to 12-TET (all-zero).
+   */
+  tuning: SceneTuning
 }
 
 // ---------------------------------------------------------------------------

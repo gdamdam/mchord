@@ -35,8 +35,9 @@ import { sanitizeScene } from '../persistence/scene'
 const FRAGMENT_KEY = 's'
 
 /** Compact-format version (independent of SCENE_VERSION; bump on format change).
- *  v2 added `ll` (loopLength); links without it decode as a full 8-slot loop. */
-const COMPACT_VERSION = 2
+ *  v2 added `ll` (loopLength); links without it decode as a full 8-slot loop.
+ *  v3 added `t`/`tn` (tuning cents + name); links without them decode as 12-TET. */
+const COMPACT_VERSION = 3
 
 /**
  * Compact slot: `[familyIndex, root, durationIndex]` for a filled slot, or
@@ -59,6 +60,8 @@ interface CompactScene {
   // macros as a fixed-order tuple: [tension, spread, motion, color]
   mc: [number, number, number, number]
   sd: number // seed
+  t: number[] // tuning cents offsets (length 12)
+  tn: string // tuning display name
 }
 
 function indexOf<T extends string>(arr: readonly T[], value: T): number {
@@ -105,6 +108,8 @@ function toCompact(scene: SceneState): CompactScene {
     p: indexOf(PRESET_IDS, scene.preset),
     mc: [scene.macros.tension, scene.macros.spread, scene.macros.motion, scene.macros.color],
     sd: scene.seed,
+    t: scene.tuning.centsOffset,
+    tn: scene.tuning.name,
   }
 }
 
@@ -135,6 +140,9 @@ function fromCompact(raw: unknown): Record<string, unknown> {
     preset: lookup(PRESET_IDS, raw.p),
     macros: { tension: mc[0], spread: mc[1], motion: mc[2], color: mc[3] },
     seed: raw.sd,
+    // Pre-v3 links carry no tuning; sanitizeScene defaults a missing/invalid
+    // tuning to 12-TET, so old links decode byte-identically.
+    tuning: { name: raw.tn, centsOffset: raw.t },
   }
 }
 

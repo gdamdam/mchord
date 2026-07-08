@@ -18,6 +18,7 @@ import { MasterBus } from './MasterBus'
 import { Voice } from './Voice'
 import { getPreset } from './presets'
 import { applyMacros } from './macros'
+import { zeroCents } from '../tuning'
 import type { ResolvedVoiceParams } from './voiceParams'
 
 /**
@@ -49,6 +50,8 @@ export class AudioEngine implements NoteSink {
   private mbusPublishWanted = false
 
   private presetId: PresetId = 'warm-poly'
+  /** Active 12-note microtuning (per-pitch-class cents offsets). All-zero = 12-TET. */
+  private tuning: number[] = zeroCents()
   private macros: MacroValues = { tension: 0.5, spread: 0.5, motion: 0.5, color: 0.5 }
   /** Current resolved params applied to every voice. */
   private resolved: ResolvedVoiceParams = applyMacros(getPreset('warm-poly').voice, {
@@ -109,7 +112,9 @@ export class AudioEngine implements NoteSink {
     // Build the voice pool against the master + reverb inputs.
     this.voices = []
     for (let i = 0; i < VOICE_POOL_SIZE; i++) {
-      this.voices.push(new Voice(ctx, this.resolved, bus.getInput(), bus.getReverbInput()))
+      const voice = new Voice(ctx, this.resolved, bus.getInput(), bus.getReverbInput())
+      voice.setTuning(this.tuning)
+      this.voices.push(voice)
     }
 
     // Auto-resume listeners for iOS interruptions / tab switches.
@@ -261,6 +266,15 @@ export class AudioEngine implements NoteSink {
   setMacros(m: MacroValues): void {
     this.macros = m
     this.reresolve()
+  }
+
+  /** Set the active 12-note microtuning (per-pitch-class cents offsets), pushing
+   *  it to every voice. Like a preset change, it retunes notes triggered after
+   *  this call; the scheduler re-attacks voices each slot, so playback picks up
+   *  the new tuning within a bar. */
+  setTuning(centsOffset: readonly number[]): void {
+    this.tuning = centsOffset.slice(0, 12)
+    for (const v of this.voices) v.setTuning(this.tuning)
   }
 
   /** Recompute resolved params from preset + macros and push to every voice. */

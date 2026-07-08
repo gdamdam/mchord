@@ -28,11 +28,13 @@ import {
   type PresetId,
   type RhythmStyle,
   type SceneState,
+  type SceneTuning,
   type Slot,
   type SlotDuration,
   type VoicingMode,
 } from '../types'
 import { createDefaultScene } from './defaults'
+import { TWELVE_TET_NAME, twelveTetTuning } from '../tuning'
 
 // ---------------------------------------------------------------------------
 // Small coercion helpers (each total — never throws)
@@ -117,6 +119,22 @@ function sanitizeMacros(raw: unknown): MacroValues {
   }
 }
 
+/**
+ * Coerce a tuning to a valid 12-note microtuning. Requires exactly 12 cents
+ * entries (our hard scope); anything else — wrong length, non-record, missing —
+ * falls back to 12-TET. Individual non-finite cents become 0 rather than
+ * discarding the whole table. Each cents value is clamped to ±1200¢ (an octave).
+ */
+function sanitizeTuning(raw: unknown): SceneTuning {
+  if (!isRecord(raw)) return twelveTetTuning()
+  const co = raw.centsOffset
+  if (!Array.isArray(co) || co.length !== 12) return twelveTetTuning()
+  const centsOffset = co.map((c) => clampNumber(c, -1200, 1200, 0))
+  const name =
+    typeof raw.name === 'string' && raw.name.trim().length > 0 ? raw.name : TWELVE_TET_NAME
+  return { name, centsOffset }
+}
+
 // ---------------------------------------------------------------------------
 // Public: sanitizeScene
 // ---------------------------------------------------------------------------
@@ -159,6 +177,7 @@ export function sanitizeScene(raw: unknown): SceneState {
     macros: sanitizeMacros(record.macros),
     seed,
     octaveShift: clampInt(record.octaveShift, OCTAVE_SHIFT_MIN, OCTAVE_SHIFT_MAX, fallback.octaveShift),
+    tuning: sanitizeTuning(record.tuning),
   }
 }
 
@@ -189,6 +208,9 @@ const MIGRATIONS: Record<number, Migration> = {
   // v2→v3: `octaveShift` was added. Old scenes had no transposition; default 0
   // preserves their register (sanitizeScene clamps it).
   2: (raw) => ({ ...raw, version: 3, octaveShift: 0 }),
+  // v3→v4: `tuning` was added. Old scenes were 12-TET; sanitizeTuning defaults a
+  // missing tuning to all-zero (12-TET), so their pitch is byte-identical.
+  3: (raw) => ({ ...raw, version: 4 }),
 }
 
 /**

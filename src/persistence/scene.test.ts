@@ -39,6 +39,9 @@ function expectValidScene(s: SceneState): void {
   expect(s.octaveShift).toBeGreaterThanOrEqual(OCTAVE_SHIFT_MIN)
   expect(s.octaveShift).toBeLessThanOrEqual(OCTAVE_SHIFT_MAX)
   expect(Number.isInteger(s.octaveShift)).toBe(true)
+  expect(typeof s.tuning.name).toBe('string')
+  expect(s.tuning.centsOffset).toHaveLength(12)
+  expect(s.tuning.centsOffset.every((c) => Number.isFinite(c))).toBe(true)
   expect(s.slots).toHaveLength(SLOT_COUNT)
   expect(s.loopLength).toBeGreaterThanOrEqual(1)
   expect(s.loopLength).toBeLessThanOrEqual(SLOT_COUNT)
@@ -180,6 +183,27 @@ describe('sanitizeScene', () => {
     expect(sanitizeScene({ loopLength: 3 }).loopLength).toBe(3)
     expect(sanitizeScene({}).loopLength).toBe(createDefaultScene().loopLength)
   })
+
+  it('defaults a missing/invalid tuning to 12-TET (all-zero)', () => {
+    expect(sanitizeScene({}).tuning.centsOffset).toEqual(new Array(12).fill(0))
+    expect(sanitizeScene({ tuning: 'nope' }).tuning.centsOffset).toEqual(new Array(12).fill(0))
+    // Wrong length is out of scope (12 pitch classes only) -> 12-TET fallback.
+    expect(sanitizeScene({ tuning: { centsOffset: [1, 2, 3] } }).tuning.centsOffset).toEqual(
+      new Array(12).fill(0),
+    )
+  })
+
+  it('accepts a valid 12-entry tuning, clamping wild cents and defaulting the name', () => {
+    const co = [0, 10, -5, 3, 2000, -3000, 6, 7, 8, 9, 10, 11]
+    const out = sanitizeScene({ tuning: { name: 'Custom', centsOffset: co } })
+    expect(out.tuning.name).toBe('Custom')
+    expect(out.tuning.centsOffset[4]).toBe(1200) // clamped to +1 octave
+    expect(out.tuning.centsOffset[5]).toBe(-1200) // clamped to -1 octave
+    expect(out.tuning.centsOffset[1]).toBe(10)
+    // Blank name falls back to the 12-TET label.
+    const noName = sanitizeScene({ tuning: { name: '  ', centsOffset: new Array(12).fill(0) } })
+    expect(noName.tuning.name).toBe('Equal (12-TET)')
+  })
 })
 
 describe('migrateScene', () => {
@@ -209,6 +233,12 @@ describe('migrateScene', () => {
     const out = migrateScene({ version: 2, bpm: 110 })
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.octaveShift).toBe(0)
+  })
+
+  it('migrates a v3 scene (no tuning) to 12-TET, byte-identical pitch', () => {
+    const out = migrateScene({ version: 3, bpm: 110 })
+    expect(out.version).toBe(SCENE_VERSION)
+    expect(out.tuning.centsOffset).toEqual(new Array(12).fill(0))
   })
 
   it('migrates an explicit version 0', () => {

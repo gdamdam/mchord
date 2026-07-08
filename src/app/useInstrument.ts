@@ -199,6 +199,10 @@ export function useInstrument(scene: SceneState): Instrument {
     if (started) engine.setMacros(scene.macros)
   }, [engine, started, scene.macros])
 
+  useEffect(() => {
+    if (started) engine.setTuning(scene.tuning.centsOffset)
+  }, [engine, started, scene.tuning])
+
   // --- Link ---
 
   useEffect(() => {
@@ -329,6 +333,7 @@ export function useInstrument(scene: SceneState): Instrument {
     schedulerRef.current = sched
     engine.setPreset(s.preset)
     engine.setMacros(s.macros)
+    engine.setTuning(s.tuning.centsOffset)
     setStarted(true)
     })()
     return startPromiseRef.current

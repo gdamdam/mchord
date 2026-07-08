@@ -17,6 +17,7 @@ import type {
   PresetId,
   RhythmStyle,
   SceneState,
+  SceneTuning,
   Slot,
   SlotDuration,
   VoicingMode,
@@ -50,6 +51,7 @@ export type Action =
   | { type: 'setBpm'; bpm: number; transient?: boolean }
   | { type: 'setSwing'; swing: number; transient?: boolean }
   | { type: 'setPreset'; preset: PresetId }
+  | { type: 'setTuning'; tuning: SceneTuning }
   | { type: 'setMacro'; macro: keyof MacroValues; value: number; transient?: boolean }
   | { type: 'shiftOctave'; delta: number }
   | { type: 'generate'; seed?: number }
@@ -84,6 +86,7 @@ const HISTORY_ACTIONS = new Set<Action['type']>([
   'setBpm',
   'setSwing',
   'setPreset',
+  'setTuning',
   'setMacro',
   'shiftOctave',
   'generate',
@@ -152,6 +155,8 @@ function reduceScene(scene: SceneState, action: Action): SceneState {
       return { ...scene, swing: clamp(action.swing, 0, 1) }
     case 'setPreset':
       return { ...scene, preset: action.preset }
+    case 'setTuning':
+      return { ...scene, tuning: action.tuning }
     case 'setMacro':
       return { ...scene, macros: { ...scene.macros, [action.macro]: clamp(action.value, 0, 1) } }
     case 'shiftOctave': {

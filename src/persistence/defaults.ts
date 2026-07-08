@@ -4,6 +4,7 @@ import {
   type SceneState,
   type Slot,
 } from '../types'
+import { twelveTetTuning } from '../tuning'
 
 /**
  * Pitch classes for a C major scale's I–V–vi–IV progression: C, G, Am, F.
@@ -54,5 +55,7 @@ export function createDefaultScene(): SceneState {
     seed: 0x5eed,
     // No octave transposition by default.
     octaveShift: 0,
+    // Standard equal temperament by default (all-zero cents = byte-identical).
+    tuning: twelveTetTuning(),
   }
 }

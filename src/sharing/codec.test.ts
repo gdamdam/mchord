@@ -29,6 +29,10 @@ function richScene(): SceneState {
     macros: { tension: 0.1, spread: 0.9, motion: 0.55, color: 0.25 },
     seed: 123456,
     octaveShift: 0,
+    tuning: {
+      name: 'Just 5-limit',
+      centsOffset: [0, 11.73, 3.91, 15.64, -13.69, -1.96, -17.49, 1.96, 13.69, -15.64, -3.91, -11.73],
+    },
   }
 }
 
@@ -67,6 +71,28 @@ describe('encodeScene / decodeScene', () => {
     expect(back).not.toBeNull()
     expect(back?.bpm).toBe(200)
     expect(back?.version).toBe(SCENE_VERSION)
+  })
+
+  it('round-trips a non-12-TET tuning in the fragment', () => {
+    const scene = richScene()
+    const back = decodeScene(encodeScene(scene))
+    expect(back?.tuning.name).toBe('Just 5-limit')
+    expect(back?.tuning.centsOffset).toEqual(scene.tuning.centsOffset)
+  })
+
+  it('decodes a pre-v3 link (no tuning) as 12-TET', () => {
+    // A compact payload without `t`/`tn` — older share links.
+    const legacy = btoa(unescape(encodeURIComponent(JSON.stringify({ v: 2, b: 120 }))))
+    const back = decodeScene(legacy)
+    expect(back?.tuning.centsOffset).toEqual(new Array(12).fill(0))
+  })
+
+  it('rejects a tampered wrong-length tuning down to 12-TET', () => {
+    const tampered = btoa(
+      unescape(encodeURIComponent(JSON.stringify({ v: 3, t: [1, 2, 3], tn: 'bad' }))),
+    )
+    const back = decodeScene(tampered)
+    expect(back?.tuning.centsOffset).toEqual(new Array(12).fill(0))
   })
 
   it('clamps out-of-range values arriving in a tampered payload', () => {
