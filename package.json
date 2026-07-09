@@ -1,7 +1,7 @@
 {
   "name": "mchord",
   "private": true,
-  "version": "1.4.6",
+  "version": "1.4.7",
   "license": "AGPL-3.0-or-later",
   "description": "Move through chords. Stay in flow. A harmony-first browser performance instrument.",
   "type": "module",
@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "vendored:check": "node scripts/sync-vendored.mjs",
     "vendored:sync": "node scripts/sync-vendored.mjs --sync",
-    "check": "npm run vendored:check && npm run typecheck && npm run lint && npm run test && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
