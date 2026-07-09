@@ -146,3 +146,23 @@ describe('encoding size (informational)', () => {
     expect(len).toBeLessThan(400)
   })
 })
+
+describe('URL-safe base64 (regression)', () => {
+  it('emits no +, / or = that a linkifier could mangle', () => {
+    const s = encodeScene(richScene())
+    expect(s).not.toMatch(/[+/=]/)
+  })
+  it('round-trips through the URL-safe alphabet', () => {
+    const scene = richScene()
+    expect(decodeScene(encodeScene(scene))).toEqual(decodeScene(encodeScene(scene)))
+    expect(decodeScene(encodeScene(scene))).not.toBeNull()
+  })
+  it('still decodes legacy standard-base64 (+/=) links', () => {
+    const scene = richScene()
+    const urlSafe = encodeScene(scene)
+    // Reconstruct the pre-fix standard-base64 form and confirm it still decodes.
+    let std = urlSafe.replace(/-/g, '+').replace(/_/g, '/')
+    while (std.length % 4 !== 0) std += '='
+    expect(decodeScene(std)).toEqual(decodeScene(urlSafe))
+  })
+})

@@ -8,9 +8,11 @@
  * the compact form is itself versioned via `v` and decoded back through
  * `sanitizeScene`, which tolerates anything out of range.
  *
- * Pipeline: compact obj → JSON → encodeURIComponent → btoa.
+ * Pipeline: compact obj → JSON → encodeURIComponent → btoa → URL-safe base64.
  * `btoa` needs Latin-1, and encodeURIComponent guarantees an ASCII-safe string,
  * so the pair round-trips arbitrary Unicode safely and stays dependency-free.
+ * The base64 is then made URL-safe (+/ → -_, no padding) so linkifiers can't
+ * mangle the fragment; decode accepts both alphabets for backward compatibility.
  *
  * The payload is tiny (8 slots), so plain base64 is fine. If the scene ever
  * grew large, this is exactly where an lz-string / DEFLATE pass would slot in
@@ -152,11 +154,20 @@ function fromCompact(raw: unknown): Record<string, unknown> {
 
 function utf8ToBase64(str: string): string {
   // encodeURIComponent → %XX escapes → unescape gives a Latin-1 string btoa accepts.
-  return btoa(unescape(encodeURIComponent(str)))
+  const b64 = btoa(unescape(encodeURIComponent(str)))
+  // URL-safe alphabet: +/ → -_ and drop '=' padding. Standard base64 rides in a
+  // URL fragment fine per spec, but real-world linkifiers (chat, email) turn '+'
+  // into a space and can choke on '/', silently corrupting a shared link.
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 function base64ToUtf8(b64: string): string {
-  return decodeURIComponent(escape(atob(b64)))
+  // Accept both the URL-safe (-_) and legacy (+/) alphabets so links shared
+  // before the URL-safe switch still decode. Re-pad to a multiple of 4 for atob.
+  let s = b64.replace(/-/g, '+').replace(/_/g, '/')
+  const pad = s.length % 4
+  if (pad > 0) s += '='.repeat(4 - pad)
+  return decodeURIComponent(escape(atob(s)))
 }
 
 // ---------------------------------------------------------------------------

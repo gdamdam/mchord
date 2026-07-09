@@ -115,7 +115,19 @@ function fitToRange(v: Midi[], r: Resolved): Midi[] {
   // Shift up while the bottom is below min.
   while (Math.min(...out) < r.minMidi) out = out.map((n) => n + 12)
   // If still out of range (very wide chord), hard clamp individual notes.
-  return out.map((n) => Math.max(r.minMidi, Math.min(r.maxMidi, n)))
+  out = out.map((n) => Math.max(r.minMidi, Math.min(r.maxMidi, n)))
+  // Per-note clamping can collapse a wide voicing onto duplicate MIDI notes,
+  // which sound as a single doubled-loudness voice (a lost voice). Re-spread to
+  // strictly-ascending, distinct pitches with a two-pass squeeze: first push up
+  // from the floor to separate collisions, then pull down from the ceiling so
+  // the top stays in range. A range narrower than the voice count can't be
+  // fully separated (some overlap remains), but real ranges always can.
+  out.sort((a, b) => a - b)
+  out[0] = Math.max(out[0], r.minMidi)
+  for (let i = 1; i < out.length; i++) out[i] = Math.max(out[i], out[i - 1] + 1)
+  out[out.length - 1] = Math.min(out[out.length - 1], r.maxMidi)
+  for (let i = out.length - 2; i >= 0; i--) out[i] = Math.min(out[i], out[i + 1] - 1)
+  return out
 }
 
 // ---------------------------------------------------------------------------
@@ -241,17 +253,19 @@ function movementScore(v: Voicing, prev: Voicing): number {
   const b = sortAsc(v)
   const used = new Array(b.length).fill(false)
   let total = 0
-  // Match every prev voice to nearest b voice (allow reuse penalty by marking).
+  // Match every prev voice to its nearest *unused* b voice. (Skipping used slots
+  // is essential: matching two prev voices onto one b slot both double-counts
+  // that move and leaves a real b voice unmatched, inflating the score and
+  // hiding the genuinely closest voicing.)
   for (const note of a) {
     let bestJ = -1
     let bestD = Infinity
     for (let j = 0; j < b.length; j++) {
+      if (used[j]) continue
       const d = Math.abs(b[j] - note)
-      if (d < bestD || (d === bestD && !used[j])) {
-        if (!used[j] || bestJ === -1) {
-          bestD = d
-          bestJ = j
-        }
+      if (d < bestD) {
+        bestD = d
+        bestJ = j
       }
     }
     if (bestJ >= 0) {

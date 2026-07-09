@@ -206,3 +206,19 @@ describe('voiceProgression handles nulls', () => {
     expect(v[2]).toEqual(v[0])
   })
 })
+
+describe('fitToRange keeps voices distinct (regression)', () => {
+  it('a wide voicing squeezed into a narrow range does not collapse to duplicates', () => {
+    // High spread in WIDE mode builds a voicing wider than the allowed range,
+    // forcing per-note clamping that used to map several voices onto one MIDI.
+    const v = voiceChord(
+      { root: 0, family: 'maj9' },
+      { mode: 'wide', spread: 1, minMidi: 58, maxMidi: 66 },
+      null,
+    )
+    expect(new Set(v).size).toBe(v.length)
+    for (const n of v) {
+      expect(n).toBeGreaterThanOrEqual(58)
+    }
+  })
+})

@@ -241,14 +241,25 @@ export class AudioEngine implements NoteSink {
     for (const v of this.voices) {
       if (!v.isActive) return v
     }
-    // No free voice: steal the QUIETEST sounding one (least audible to cut), and
-    // fast-fade it before reuse so the steal itself stays click-free.
-    let quietest = this.voices[0]
+    // No free voice. Prefer stealing a voice already in its release tail — on
+    // note-off the voice clears `midi` but stays active until the tail ends, so
+    // `midi === null` marks the least-audible candidates; take the quietest of
+    // those. Only if none are releasing, steal the OLDEST sounding voice (lowest
+    // age counter). Never steal purely by instantaneous gain: a note still
+    // ramping through its attack has near-zero gain yet is the freshest, most
+    // important note to keep. Fast-fade before reuse so the steal stays clean.
+    let target: Voice | null = null
     for (const v of this.voices) {
-      if (v.level < quietest.level) quietest = v
+      if (v.midi === null && (target === null || v.level < target.level)) target = v
     }
-    quietest.fastStop(this.now())
-    return quietest
+    if (target === null) {
+      for (const v of this.voices) {
+        if (target === null || v.age < target.age) target = v
+      }
+    }
+    const victim = target ?? this.voices[0]
+    victim.fastStop(this.now())
+    return victim
   }
 
   // ---------------------------------------------------------------------------
