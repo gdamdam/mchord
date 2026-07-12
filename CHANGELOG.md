@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.9] — 2026-07-13
+
+### Fixed
+- **mbus subscriptions survive bridge drops.** Vendored mbus client synced from canonical (mbus-client 0.2.1): subscription intent is kept as `connecting` across WebSocket drops instead of failing permanently, ICE candidates are buffered until the remote description is set, and stale peer-connection callbacks can no longer tear down a replacement connection.
+
 ## [1.4.5] — 2026-07-07
 
 ### Changed
