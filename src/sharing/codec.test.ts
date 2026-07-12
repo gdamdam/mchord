@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { SCENE_VERSION, type SceneState } from '../types'
+import { SCENE_VERSION, type SceneState, type TuningAnchor } from '../types'
 import { createDefaultScene } from '../persistence/defaults'
+import { sanitizeScene } from '../persistence/scene'
 import { encodeScene, decodeScene, sceneToShareUrl, sceneFromUrl } from './codec'
 
 /** A non-default, fully-populated scene to exercise every field. */
@@ -32,6 +33,7 @@ function richScene(): SceneState {
     tuning: {
       name: 'Just 5-limit',
       centsOffset: [0, 11.73, 3.91, 15.64, -13.69, -1.96, -17.49, 1.96, 13.69, -15.64, -3.91, -11.73],
+      anchor: { mode: 'fixed', pc: 7 },
     },
   }
 }
@@ -164,5 +166,54 @@ describe('URL-safe base64 (regression)', () => {
     let std = urlSafe.replace(/-/g, '+').replace(/_/g, '/')
     while (std.length % 4 !== 0) std += '='
     expect(decodeScene(std)).toEqual(decodeScene(urlSafe))
+  })
+})
+
+describe('tuning anchor in share links', () => {
+  const rawPayload = (obj: unknown) => btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
+
+  it('decodes a pre-v4 link (tuning without anchor) as Fixed C — unchanged sound', () => {
+    const co = new Array(12).fill(5)
+    const back = decodeScene(rawPayload({ v: 3, t: co, tn: 'JI' }))
+    expect(back?.tuning.anchor).toEqual({ mode: 'fixed', pc: 0 })
+    expect(back?.tuning.centsOffset).toEqual(co)
+  })
+
+  it('round-trips all three anchor modes', () => {
+    const anchors: TuningAnchor[] = [{ mode: 'key' }, { mode: 'fixed', pc: 0 }, { mode: 'fixed', pc: 9 }]
+    for (const anchor of anchors) {
+      const scene: SceneState = { ...richScene(), tuning: { ...richScene().tuning, anchor } }
+      expect(decodeScene(encodeScene(scene))?.tuning.anchor).toEqual(anchor)
+    }
+  })
+
+  it('clamps malformed anchor wire values safely', () => {
+    const anchorOf = (ta: unknown) =>
+      decodeScene(rawPayload({ v: 4, t: new Array(12).fill(0), tn: 'x', ta }))?.tuning.anchor
+    expect(anchorOf(-1)).toEqual({ mode: 'key' })
+    expect(anchorOf(99)).toEqual({ mode: 'fixed', pc: 11 })
+    expect(anchorOf(-5)).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf('x')).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf(null)).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf([])).toEqual({ mode: 'fixed', pc: 0 })
+  })
+
+  it('codec and session sanitizer agree on anchor bounds (parity)', () => {
+    // The codec must clamp EXACTLY like the session path: same input pc, same
+    // resulting anchor. This repo family had a codec-vs-session divergence
+    // bug before — keep the two trust boundaries in lockstep.
+    for (const pc of [-5, -1, 0, 3, 11, 12, 99, 11.7]) {
+      const viaCodec = decodeScene(
+        rawPayload({ v: 4, t: new Array(12).fill(0), tn: 'x', ta: pc === -1 ? -999 : pc }),
+      )?.tuning.anchor
+      const viaSession = sanitizeScene({
+        tuning: {
+          name: 'x',
+          centsOffset: new Array(12).fill(0),
+          anchor: { mode: 'fixed', pc: pc === -1 ? -999 : pc },
+        },
+      }).tuning.anchor
+      expect(viaCodec).toEqual(viaSession)
+    }
   })
 })

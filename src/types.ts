@@ -237,15 +237,27 @@ export interface MacroValues {
 // ---------------------------------------------------------------------------
 
 /**
+ * Where the 12-entry cents table is anchored: which pitch class carries the
+ * table's degree-0 offset (normally 0¢ — sitting exactly on 12-TET). 'key'
+ * follows the scene's keyRoot (JI/maqam intent: the tonic is always pure);
+ * 'fixed' pins the table to one pitch class regardless of key — pc 0 (C) is
+ * the historically-authentic choice for well-temperaments and the compat
+ * behaviour of every pre-anchor scene/link.
+ */
+export type TuningAnchor = { mode: 'key' } | { mode: 'fixed'; pc: PitchClass }
+
+/**
  * A 12-note microtuning. `centsOffset[pc]` is added (in cents) to the 12-TET
  * frequency of pitch class `pc` (pc = midi % 12); the array is always length 12.
  * All-zero is exactly 12-TET, so it is the byte-identical default. `name` is the
- * display label (a builtin's name or an imported `.scl`'s description). This is
- * the only tuning surface mchord carries — arbitrary-N scales are out of scope.
+ * display label (a builtin's name or an imported `.scl`'s description). `anchor`
+ * rotates the table before it reaches the engine (see resolveCentsOffset). This
+ * is the only tuning surface mchord carries — arbitrary-N scales are out of scope.
  */
 export interface SceneTuning {
   name: string
   centsOffset: number[]
+  anchor: TuningAnchor
 }
 
 // ---------------------------------------------------------------------------
@@ -259,8 +271,10 @@ export interface SceneTuning {
  * v2: added `loopLength` (migration defaults it to SLOT_COUNT = full loop).
  * v3: added `octaveShift` (migration defaults it to 0 = no shift).
  * v4: added `tuning` (migration defaults it to 12-TET = all-zero, byte-identical).
+ * v5: added `tuning.anchor` (migration defaults it to Fixed C — the pre-anchor
+ *     behaviour, so old scenes sound bit-identical; new scenes follow the key).
  */
-export const SCENE_VERSION = 4
+export const SCENE_VERSION = 5
 
 /**
  * The complete performance scene. This is the unit that is persisted to

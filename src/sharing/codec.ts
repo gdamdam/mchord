@@ -38,8 +38,10 @@ const FRAGMENT_KEY = 's'
 
 /** Compact-format version (independent of SCENE_VERSION; bump on format change).
  *  v2 added `ll` (loopLength); links without it decode as a full 8-slot loop.
- *  v3 added `t`/`tn` (tuning cents + name); links without them decode as 12-TET. */
-const COMPACT_VERSION = 3
+ *  v3 added `t`/`tn` (tuning cents + name); links without them decode as 12-TET.
+ *  v4 added `ta` (tuning anchor); links without it decode as Fixed C — the
+ *  pre-anchor behaviour, so old links sound bit-identical. */
+const COMPACT_VERSION = 4
 
 /**
  * Compact slot: `[familyIndex, root, durationIndex]` for a filled slot, or
@@ -64,6 +66,7 @@ interface CompactScene {
   sd: number // seed
   t: number[] // tuning cents offsets (length 12)
   tn: string // tuning display name
+  ta: number // tuning anchor: -1 = follow key, 0–11 = fixed pitch class
 }
 
 function indexOf<T extends string>(arr: readonly T[], value: T): number {
@@ -112,7 +115,20 @@ function toCompact(scene: SceneState): CompactScene {
     sd: scene.seed,
     t: scene.tuning.centsOffset,
     tn: scene.tuning.name,
+    ta: scene.tuning.anchor.mode === 'key' ? -1 : scene.tuning.anchor.pc,
   }
+}
+
+/**
+ * Anchor wire form → loose anchor object for sanitizeTuning to finalise
+ * (it clamps the pc and defaults anything unrecognised to Fixed C). Pre-v4
+ * links carry no `ta`: returning undefined lets that same Fixed-C default
+ * apply, keeping codec and session sanitiser bounds in exact parity.
+ */
+function decodeAnchor(ta: unknown): unknown {
+  if (ta === -1) return { mode: 'key' }
+  if (typeof ta === 'number') return { mode: 'fixed', pc: ta }
+  return undefined
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -144,7 +160,7 @@ function fromCompact(raw: unknown): Record<string, unknown> {
     seed: raw.sd,
     // Pre-v3 links carry no tuning; sanitizeScene defaults a missing/invalid
     // tuning to 12-TET, so old links decode byte-identically.
-    tuning: { name: raw.tn, centsOffset: raw.t },
+    tuning: { name: raw.tn, centsOffset: raw.t, anchor: decodeAnchor(raw.ta) },
   }
 }
 

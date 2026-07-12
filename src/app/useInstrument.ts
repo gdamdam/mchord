@@ -24,6 +24,7 @@ import {
   type LinkState,
 } from '../transport'
 import { voiceProgression } from '../harmony'
+import { resolveCentsOffset } from '../tuning'
 import type { SceneState, Voicing, VoicingOptions } from '../types'
 import { SLOT_COUNT } from '../types'
 import { FanOutSink, TimedMidiSink } from './sinks'
@@ -200,8 +201,11 @@ export function useInstrument(scene: SceneState): Instrument {
   }, [engine, started, scene.macros])
 
   useEffect(() => {
-    if (started) engine.setTuning(scene.tuning.centsOffset)
-  }, [engine, started, scene.tuning])
+    // The anchor is resolved here (not in the engine) so the engine/Voice hot
+    // path stays anchor-unaware. keyRoot is a dependency because a follow-key
+    // tuning must re-anchor when the key changes mid-session.
+    if (started) engine.setTuning(resolveCentsOffset(scene.tuning, scene.keyRoot))
+  }, [engine, started, scene.tuning, scene.keyRoot])
 
   // --- Link ---
 
@@ -333,7 +337,7 @@ export function useInstrument(scene: SceneState): Instrument {
     schedulerRef.current = sched
     engine.setPreset(s.preset)
     engine.setMacros(s.macros)
-    engine.setTuning(s.tuning.centsOffset)
+    engine.setTuning(resolveCentsOffset(s.tuning, s.keyRoot))
     setStarted(true)
     })()
     return startPromiseRef.current

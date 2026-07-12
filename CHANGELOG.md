@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] — 2026-07-13
+
+### Added
+- **Tuning anchor** — new setting next to the tuning picker choosing which
+  pitch class the microtuning table is rooted on: **Follow key** (the tonic is
+  always pure — the intent of JI/maqam scales, and the fix for JI in D minor
+  being C-pure instead of D-pure), **Fixed C** (the historically-authentic
+  reading of well-temperaments), or any fixed note. Selecting a builtin preset
+  applies its suggested anchor (well-temperaments → Fixed C, everything else →
+  Follow key), overridable afterwards. New scenes default to Follow key.
+  **Compatibility:** scenes and share links saved before this setting existed
+  decode as Fixed C — the previous implicit behaviour — so they sound
+  bit-identical to before. Scene schema v5, share-link compact format v4.
+
 ## [1.4.9] — 2026-07-13
 
 ### Fixed

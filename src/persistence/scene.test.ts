@@ -259,3 +259,45 @@ describe('migrateScene', () => {
     }
   })
 })
+
+describe('sanitizeScene — tuning anchor', () => {
+  const zeros = () => new Array(12).fill(0)
+
+  it('defaults a missing anchor to Fixed C (pre-anchor scenes stay C-anchored)', () => {
+    const out = sanitizeScene({ tuning: { name: 'JI', centsOffset: new Array(12).fill(5) } })
+    expect(out.tuning.anchor).toEqual({ mode: 'fixed', pc: 0 })
+    expect(out.tuning.centsOffset).toEqual(new Array(12).fill(5))
+  })
+
+  it('preserves follow-key and fixed anchors', () => {
+    const key = sanitizeScene({ tuning: { name: 'x', centsOffset: zeros(), anchor: { mode: 'key' } } })
+    expect(key.tuning.anchor).toEqual({ mode: 'key' })
+    const fixed = sanitizeScene({
+      tuning: { name: 'x', centsOffset: zeros(), anchor: { mode: 'fixed', pc: 9 } },
+    })
+    expect(fixed.tuning.anchor).toEqual({ mode: 'fixed', pc: 9 })
+  })
+
+  it('clamps a malformed fixed pc and rejects garbage anchors to Fixed C', () => {
+    const anchorOf = (anchor: unknown) =>
+      sanitizeScene({ tuning: { name: 'x', centsOffset: zeros(), anchor } }).tuning.anchor
+    expect(anchorOf({ mode: 'fixed', pc: 99 })).toEqual({ mode: 'fixed', pc: 11 })
+    expect(anchorOf({ mode: 'fixed', pc: -5 })).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf({ mode: 'fixed', pc: 'D' })).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf({ mode: 'sideways' })).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf('nope')).toEqual({ mode: 'fixed', pc: 0 })
+    expect(anchorOf(null)).toEqual({ mode: 'fixed', pc: 0 })
+  })
+
+  it('newly created scenes follow the key', () => {
+    expect(createDefaultScene().tuning.anchor).toEqual({ mode: 'key' })
+  })
+
+  it('migrates a v4 scene (tuning without anchor) to Fixed C — unchanged sound', () => {
+    const co = new Array(12).fill(7)
+    const out = migrateScene({ version: 4, tuning: { name: 'JI', centsOffset: co } })
+    expect(out.version).toBe(SCENE_VERSION)
+    expect(out.tuning.anchor).toEqual({ mode: 'fixed', pc: 0 })
+    expect(out.tuning.centsOffset).toEqual(co)
+  })
+})

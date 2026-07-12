@@ -10,7 +10,7 @@
  * SCOPE: 12 pitch classes per octave only. Arbitrary-N scales are deliberately
  * out of scope here — non-12 / non-octave `.scl` files are rejected on import.
  */
-import type { SceneTuning } from '../types'
+import type { PitchClass, SceneTuning, TuningAnchor } from '../types'
 import { midiToFreq } from '../audio/dsp'
 import { centsToRatio } from '../vendor/tuning-core/model'
 import {
@@ -31,7 +31,20 @@ export function zeroCents(): number[] {
 /** The default, always-available tuning: standard equal temperament. */
 export const TWELVE_TET_NAME = 'Equal (12-TET)'
 export function twelveTetTuning(): SceneTuning {
-  return { name: TWELVE_TET_NAME, centsOffset: zeroCents() }
+  // Follow-key anchor: sonically neutral for the all-zero table, and it is the
+  // default new scenes should inherit (JI/maqam users mean "pure in MY key").
+  return { name: TWELVE_TET_NAME, centsOffset: zeroCents(), anchor: { mode: 'key' } }
+}
+
+/**
+ * Suggested anchor for a builtin preset. Historical well-temperaments encode
+ * per-key colour around a C-rooted circle of fifths, so they are authentically
+ * C-anchored; everything else (JI, maqam, EDO subsets, gamelan) describes
+ * intervals from a tonic and should follow the key. Applied on preset
+ * selection only — the user can override it afterwards.
+ */
+function suggestedAnchor(name: string): TuningAnchor {
+  return name.includes('(well-temp)') ? { mode: 'fixed', pc: 0 } : { mode: 'key' }
 }
 
 /**
@@ -54,7 +67,11 @@ export const TUNING_PRESETS: readonly SceneTuning[] = [
   ...AUTHORED_PORTABLE_TUNINGS,
 ]
   .filter((t) => t.scaleCents.length === PITCH_CLASSES)
-  .map((t) => ({ name: t.name, centsOffset: portableToCentsOffset(t) }))
+  .map((t) => ({
+    name: t.name,
+    centsOffset: portableToCentsOffset(t),
+    anchor: suggestedAnchor(t.name),
+  }))
 
 /**
  * Parse a `.scl` file into a 12-note cents-offset tuning, or null if it is not a
@@ -72,7 +89,25 @@ export function sclTextToTuning(text: string): SceneTuning | null {
   if (scl.cents.length !== PITCH_CLASSES) return null
   if (Math.abs(scl.period - 1200) > 1e-6) return null
   const centsOffset = scl.cents.map((c, i) => c - 100 * i)
-  return { name: scl.name?.trim() || 'Imported .scl', centsOffset }
+  // `.scl` scales are written from a tonic (degree 0 = 1/1), so an import is
+  // tonic-relative by nature: follow the key.
+  return { name: scl.name?.trim() || 'Imported .scl', centsOffset, anchor: { mode: 'key' } }
+}
+
+/**
+ * Resolve a tuning to the engine-facing 12-entry table by rotating it to its
+ * anchor: effective offset for pitch class p is `centsOffset[(p − anchorPc) mod
+ * 12]`, so the anchor pitch class carries the table's degree-0 offset (normally
+ * 0¢ — pure 12-TET). The engine and Voice stay anchor-unaware: they keep
+ * indexing by `midi % 12`, and this rotation happens once per tuning/key change,
+ * never in the audio hot path. Anchor C (the pre-anchor behaviour) and any
+ * all-zero table are exact no-ops.
+ */
+export function resolveCentsOffset(tuning: SceneTuning, keyRoot: PitchClass): number[] {
+  const anchorPc = tuning.anchor.mode === 'key' ? keyRoot : tuning.anchor.pc
+  return tuning.centsOffset.map(
+    (_, pc) => tuning.centsOffset[(((pc - anchorPc) % PITCH_CLASSES) + PITCH_CLASSES) % PITCH_CLASSES] ?? 0,
+  )
 }
 
 /**

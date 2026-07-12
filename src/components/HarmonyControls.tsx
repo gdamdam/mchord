@@ -70,7 +70,23 @@ export function HarmonyControls(props: HarmonyControlsProps) {
       return
     }
     const preset = TUNING_PRESETS.find((t) => t.name === value)
-    if (preset) onTuning({ name: preset.name, centsOffset: [...preset.centsOffset] })
+    // Selecting a preset applies its suggested anchor (JI/maqam → follow key,
+    // well-temperaments → fixed C); the Anchor control overrides it afterwards.
+    if (preset) onTuning({ name: preset.name, centsOffset: [...preset.centsOffset], anchor: preset.anchor })
+  }
+
+  /** Anchor selector value: 'key' or the fixed pitch class as a string. */
+  const ANCHOR_KEY = 'key'
+  const anchorValue = tuning.anchor.mode === 'key' ? ANCHOR_KEY : String(tuning.anchor.pc)
+  const anchorOptions = [
+    { value: ANCHOR_KEY, label: 'Follow key' },
+    ...ROOT_LABELS.map((label, pc) => ({ value: String(pc), label: `Fixed ${label}` })),
+  ]
+  const onAnchorChange = (value: string) => {
+    onTuning({
+      ...tuning,
+      anchor: value === ANCHOR_KEY ? { mode: 'key' } : { mode: 'fixed', pc: Number(value) as PitchClass },
+    })
   }
 
   const onSclFile = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -102,6 +118,9 @@ export function HarmonyControls(props: HarmonyControlsProps) {
           )}
         />
         <Select label="Tuning" value={tuning.name} onChange={onTuningChange} options={tuningOptions} />
+        <div title="Which note the tuning is rooted on: JI & maqam scales want Follow key; historical well-temperaments are authentically Fixed C.">
+          <Select label="Anchor" value={anchorValue} onChange={onAnchorChange} options={anchorOptions} />
+        </div>
         <input
           ref={fileRef}
           type="file"

@@ -31,6 +31,7 @@ import {
   type SceneTuning,
   type Slot,
   type SlotDuration,
+  type TuningAnchor,
   type VoicingMode,
 } from '../types'
 import { createDefaultScene } from './defaults'
@@ -120,19 +121,39 @@ function sanitizeMacros(raw: unknown): MacroValues {
 }
 
 /**
+ * Coerce a tuning anchor. A missing/invalid anchor is Fixed C — pre-anchor
+ * scenes/links were implicitly C-anchored (pc = midi % 12), so this is the only
+ * default that never silently changes what an existing scene sounds like. New
+ * scenes get Follow key from `createDefaultScene()`/`twelveTetTuning()` instead.
+ */
+function sanitizeAnchor(raw: unknown): TuningAnchor {
+  if (isRecord(raw)) {
+    if (raw.mode === 'key') return { mode: 'key' }
+    if (raw.mode === 'fixed') return { mode: 'fixed', pc: clampInt(raw.pc, 0, 11, 0) }
+  }
+  return { mode: 'fixed', pc: 0 }
+}
+
+/**
  * Coerce a tuning to a valid 12-note microtuning. Requires exactly 12 cents
  * entries (our hard scope); anything else — wrong length, non-record, missing —
  * falls back to 12-TET. Individual non-finite cents become 0 rather than
  * discarding the whole table. Each cents value is clamped to ±1200¢ (an octave).
  */
 function sanitizeTuning(raw: unknown): SceneTuning {
-  if (!isRecord(raw)) return twelveTetTuning()
-  const co = raw.centsOffset
-  if (!Array.isArray(co) || co.length !== 12) return twelveTetTuning()
+  const record = isRecord(raw) ? raw : {}
+  const anchor = sanitizeAnchor(record.anchor)
+  const co = record.centsOffset
+  // The 12-TET fallback keeps the sanitised anchor: with an all-zero table the
+  // anchor is sonically neutral either way, and preserving a valid one avoids
+  // dropping user intent when only the cents table is malformed.
+  if (!Array.isArray(co) || co.length !== 12) return { ...twelveTetTuning(), anchor }
   const centsOffset = co.map((c) => clampNumber(c, -1200, 1200, 0))
   const name =
-    typeof raw.name === 'string' && raw.name.trim().length > 0 ? raw.name : TWELVE_TET_NAME
-  return { name, centsOffset }
+    typeof record.name === 'string' && record.name.trim().length > 0
+      ? record.name
+      : TWELVE_TET_NAME
+  return { name, centsOffset, anchor }
 }
 
 // ---------------------------------------------------------------------------
@@ -211,6 +232,10 @@ const MIGRATIONS: Record<number, Migration> = {
   // v3→v4: `tuning` was added. Old scenes were 12-TET; sanitizeTuning defaults a
   // missing tuning to all-zero (12-TET), so their pitch is byte-identical.
   3: (raw) => ({ ...raw, version: 4 }),
+  // v4→v5: `tuning.anchor` was added. Old scenes were C-anchored (pc = midi % 12);
+  // sanitizeAnchor defaults a missing anchor to Fixed C, so their pitch is
+  // byte-identical.
+  4: (raw) => ({ ...raw, version: 5 }),
 }
 
 /**
