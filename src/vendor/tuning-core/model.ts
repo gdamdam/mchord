@@ -1,4 +1,4 @@
-/* @vendored from mdrone/src/tuning/model.ts @ 8b614cd
+/* @vendored from mdrone/src/tuning/model.ts @ 1f40372
  * AGPL-3.0-or-later, same author as mchord. Do NOT edit here — edit upstream
  * in mdrone and re-run `npm run vendored:sync`. See scripts/sync-vendored.mjs. */
 
