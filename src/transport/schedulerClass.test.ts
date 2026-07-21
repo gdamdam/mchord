@@ -84,6 +84,21 @@ describe('Scheduler class', () => {
     s.dispose()
   })
 
+  it('releases active voices before changing rhythm during playback', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([{ voicing: triad(60), durationBars: 1 }])
+    s.start(0)
+
+    s.setRhythm('pulse')
+    expect(sink.panics).toBe(1)
+
+    // Reapplying the current style must not interrupt playback again.
+    s.setRhythm('pulse')
+    expect(sink.panics).toBe(1)
+    expect(s.playing).toBe(true)
+    s.dispose()
+  })
+
   it('onStep fires with the active slot index and clears unsubscribe', () => {
     const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
     s.setSteps([

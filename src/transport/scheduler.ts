@@ -391,6 +391,11 @@ export class Scheduler {
   }
 
   setRhythm(style: RhythmStyle): void {
+    if (style === this.rhythm) return
+    // Releases are regenerated from the current style on every lookahead tick.
+    // Flush voices created by the previous style before replacing it, otherwise
+    // their original note-offs disappear from the plan and can hang indefinitely.
+    if (this._playing) this.dispatch.allNotesOff()
     this.rhythm = style
   }
 
