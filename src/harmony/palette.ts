@@ -50,7 +50,7 @@ function diatonicSeventhFamily(
   if (t === 4 && f === 7 && s === 11) return 'maj7'
   if (t === 3 && f === 7 && s === 10) return 'min7'
   if (t === 4 && f === 7 && s === 10) return 'dom7'
-  if (t === 3 && f === 6 && s === 10) return 'min7' // half-dim → closest family
+  if (t === 3 && f === 6 && s === 10) return 'm7b5' // half-diminished (ii in minor, vii in major)
   if (t === 3 && f === 6 && s === 9) return 'dim'
   if (t === 3 && f === 7 && s === 11) return 'minMaj7'
   return diatonicTriadFamily(pcs, degree)
@@ -85,7 +85,11 @@ export function diatonicSevenths(keyRoot: PitchClass, mode: Mode): Chord[] {
  * ♭VII, ♭III, ♭VI (from the parallel minor), and the minor i (modal mixture).
  */
 function borrowedChords(keyRoot: PitchClass, mode: Mode): Chord[] {
-  const isMajorish = mode === 'major' || mode === 'lydian' || mode === 'mixolydian'
+  const isMajorish =
+    mode === 'major' ||
+    mode === 'lydian' ||
+    mode === 'mixolydian' ||
+    mode === 'harmonic-major'
   const r = (semi: number, family: ChordFamily): Chord => ({
     root: mod12(keyRoot + semi),
     family,

@@ -5,6 +5,63 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] — 2026-07-22
+
+### Added
+
+- **Three more modes (7 → 10).** **Locrian** (completes the seven modes of the
+  major scale), **Melodic minor** (jazz minor), and **Harmonic major**. All are
+  heptatonic, so they drop straight into the existing 7-degree palette / Roman
+  numeral engine — no behavioural change to the seven original modes.
+- **Seven more chord families (16 → 23).** **m7♭5** (half-diminished), **7♭9**,
+  **7♯9**, **13**, **maj7♯11**, **7sus4**, and **5** (power chord). Extended
+  tensions spell by generic degree (e.g. C7♯11 → …F♯, C13 → …A) and label with
+  correct Roman suffixes (viiø7, V7♭9, …).
+- **Three more voice-leading modes (5 → 8).** **Quartal** (stacked fourths,
+  modal "So What" voicing), **Drop-2** (close voicing with the 2nd-from-top voice
+  dropped an octave), and **Shell** (root + 3rd + 7th guide-tone shell).
+- **Type-a-progression by name.** A new **⌨ Chords** button in the header opens a
+  modal where you type chord names (e.g. `Cmaj7 Am7 Dm7 G7`) and apply them to the
+  slots. Names are read absolutely (independent of the Key setting), with a live
+  preview that flags anything unrecognised before you apply.
+- **Bigger, richer progression library (240 → 287 presets).** Added the
+  **Jazz** (20), **Pop** (15), **Cinematic** (16), and **Gospel** (18) genres,
+  plus expansions to **lo-fi**/**deep-house** (14) and **house**/**garage**/
+  **trance**/**synthwave**/**drum-and-bass** (12). Counts are now **variable per
+  genre** (5–30): idiom-rich genres carry more (jazz blues, rhythm-changes bridge,
+  Royal Road, Pachelbel, Hollywood cadence, gospel 3-6-2-5-1, …); 2–4-chord
+  vamp-based electronic genres stay at 10.
+- **Per-setting help tooltips.** Every harmony control (Key, Mode, Tuning,
+  Anchor, Sound, Style, Voice leading, Direction, Loop, Swing) now shows a
+  hover tooltip explaining what it does.
+
+### Changed
+
+- **Unified Ableton Link control.** The separate "Enable Link" button and the
+  "Link off" status pill are now a single control that toggles Link *and* shows
+  its status across three states (off → on/waiting → connected, with a live
+  BPM · peers readout).
+- **Anchor dims when it has no effect.** With the default Equal (12-TET) tuning
+  the anchor rotates nothing, so the control is now greyed out (with an
+  explanatory tooltip) until a microtuning is selected.
+- **Progression genres list alphabetically** in the browser modal.
+
+### Fixed
+
+- **Half-diminished sevenths are now spelled correctly.** The diatonic seventh
+  on vii° (major) / ii (minor) previously fell back to `min7`; it is now the
+  first-class **m7♭5** family, so `viiø7` reads and voices as a true
+  half-diminished chord.
+- **Swing slider no longer stretches full-width** when it wraps onto its own
+  row — it now matches the width of the controls beside it.
+
+### Compatibility
+
+- All new enum members are **appended** to their const arrays, so existing saved
+  sessions and share links keep byte-identical decoding (the codec indexes into
+  these arrays and clamps out-of-range values). Microtuning, MIDI, and scene
+  formats are unchanged.
+
 ## [1.6.0] — 2026-07-22
 
 ### Added

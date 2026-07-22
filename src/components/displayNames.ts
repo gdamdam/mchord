@@ -15,6 +15,9 @@ export const MODE_LABELS: Record<Mode, string> = {
   phrygian: 'Phrygian',
   lydian: 'Lydian',
   'harmonic-minor': 'Harmonic minor',
+  locrian: 'Locrian',
+  'melodic-minor': 'Melodic minor',
+  'harmonic-major': 'Harmonic major',
 }
 
 export const VOICING_LABELS: Record<VoicingMode, string> = {
@@ -23,6 +26,9 @@ export const VOICING_LABELS: Record<VoicingMode, string> = {
   smooth: 'Smooth',
   wide: 'Wide',
   bass: 'Bass',
+  quartal: 'Quartal',
+  drop2: 'Drop-2',
+  shell: 'Shell',
 }
 
 export const DIRECTION_LABELS: Record<Direction, string> = {

@@ -375,32 +375,53 @@ body {
   gap: 12px;
 }
 
-.link-pill {
+/* Single control that both toggles Ableton Link and shows its status.
+   Three states: off (resting) → on/waiting (amber) → connected (green). */
+.link-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.74rem;
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 0.72rem;
   font-family: var(--mono);
   color: var(--text-dim);
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 4px 10px;
+  cursor: pointer;
 }
 
-.link-pill__dot {
+.link-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.link-btn__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--text-faint);
 }
 
-.link-pill.is-on {
+/* Enabled but not yet connected — warming up. */
+.link-btn.is-on {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+
+.link-btn.is-on .link-btn__dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Connected — live; overrides the amber "on" styling. */
+.link-btn.is-connected {
   color: var(--accent-3);
   border-color: color-mix(in srgb, var(--accent-3) 50%, var(--line));
 }
 
-.link-pill.is-on .link-pill__dot {
+.link-btn.is-connected .link-btn__dot {
   background: var(--accent-3);
   box-shadow: 0 0 8px var(--accent-3);
 }
@@ -900,8 +921,11 @@ input[type='range']:disabled {
 }
 
 .controls__swing {
+  /* Don't grow to fill the row — keep it a normal control width like the
+     selects beside it (it used to stretch full-width when wrapped alone). */
+  flex: 0 1 240px;
   min-width: 180px;
-  flex: 1 1 180px;
+  max-width: 240px;
 }
 
 .field {
@@ -909,6 +933,16 @@ input[type='range']:disabled {
   flex-direction: column;
   gap: 4px;
   min-width: 120px;
+}
+
+/* A control made inert by another parameter (e.g. Anchor under 12-TET). */
+.field.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field.is-disabled .dropdown__button {
+  pointer-events: none;
 }
 
 .field__label {
@@ -1452,6 +1486,77 @@ input[type='range']:disabled {
     flex-wrap: wrap;
     max-height: none;
   }
+}
+
+/* --------------------------------------------------------- chord entry -- */
+
+.chordentry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chordentry__hint {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.chordentry__hint code {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.chordentry__input {
+  width: 100%;
+  resize: vertical;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.chordentry__preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chordentry__chip {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent-3) 45%, var(--line));
+  color: var(--accent-3);
+  background: var(--panel);
+}
+
+.chordentry__chip.is-bad {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
+.chordentry__status {
+  min-height: 1.2em;
+  font-size: 0.82rem;
+}
+
+.chordentry__error {
+  color: var(--danger);
+}
+
+.chordentry__ok {
+  color: var(--text-dim);
+}
+
+.chordentry__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* -------------------------------------------------------------- startgate -- */

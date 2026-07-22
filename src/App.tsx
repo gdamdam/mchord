@@ -7,6 +7,7 @@ import { HarmonyControls } from './components/HarmonyControls'
 import { Macros } from './components/Macros'
 import { Modal } from './components/Modal'
 import { ProgressionBrowser } from './components/ProgressionBrowser'
+import { ChordEntryModal } from './components/ChordEntryModal'
 import { StartGate } from './components/StartGate'
 import { TopBar } from './components/TopBar'
 import { Transport } from './components/Transport'
@@ -52,6 +53,7 @@ export default function App() {
   const [paletteSlot, setPaletteSlot] = useState<number | null>(null)
   const [progressionsOpen, setProgressionsOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [chordsOpen, setChordsOpen] = useState(false)
 
   // Drop a share fragment after loading so a refresh doesn't clobber edits.
   useEffect(() => {
@@ -199,6 +201,7 @@ export default function App() {
         onMasterVolume={instrument.setMasterVolume}
         midi={instrument.midi}
         onOpenAdvanced={() => setAdvancedOpen(true)}
+        onOpenChords={() => setChordsOpen(true)}
         onLoadSession={(name, loaded) => {
           dispatch({ type: 'loadScene', scene: loaded })
           setCurrentSessionName(name)
@@ -298,6 +301,14 @@ export default function App() {
         onLoad={(chords, loadedMode) =>
           dispatch({ type: 'loadProgression', chords, mode: loadedMode })
         }
+      />
+
+      <ChordEntryModal
+        open={chordsOpen}
+        onClose={() => setChordsOpen(false)}
+        keyRoot={scene.keyRoot}
+        mode={scene.mode}
+        onApply={(chords) => dispatch({ type: 'loadProgression', chords })}
       />
 
       <footer className="app__footer">

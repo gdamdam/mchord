@@ -36,7 +36,9 @@ export function ProgressionBrowser({ open, onClose, keyRoot, mode, onLoad }: Pro
       </p>
       <div className="proglib">
         <nav className="proglib__genres" aria-label="Genre">
-          {GENRES.map((g) => (
+          {[...GENRES]
+            .sort((a, b) => GENRE_LABELS[a].localeCompare(GENRE_LABELS[b]))
+            .map((g) => (
             <button
               key={g}
               type="button"

@@ -396,6 +396,77 @@ function enumerateUpper(pcs: number[], r: Resolved, bass: Midi): Voicing[] {
 }
 
 // ---------------------------------------------------------------------------
+// QUARTAL mode (stacked perfect fourths — "So What"/modal voicing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Modal quartal voicing: build the stack from perfect fourths (5 semitones)
+ * rooted on the chord root — a chord tone — instead of stacked thirds. This is
+ * the defining feature of quartal harmony ("So What"), so the upper voices are
+ * intentionally the fourth-stack colour tones rather than the chord's own
+ * thirds. The voice count follows the chord size (min 3) so triads still get a
+ * full quartal stack and larger chords add another fourth. SPREAD widens each
+ * fourth. Register anchoring / range clamping is shared with the other modes.
+ */
+function voiceQuartal(chord: Chord, r: Resolved): Voicing {
+  const pcs = targetPitchClasses(chord, r)
+  const voices = Math.max(3, pcs.length)
+  // SPREAD widens the fourth; at spread 0 this is a pure perfect-fourth stack.
+  const step = 5 + Math.round(r.spread * 2)
+  const start = nearestMidiToPc(chord.root, r.center - 6)
+  const v: Midi[] = []
+  for (let i = 0; i < voices; i++) v.push(start + i * step)
+  return fitToRange(sortAsc(v), r)
+}
+
+// ---------------------------------------------------------------------------
+// DROP2 mode (close position with the 2nd-from-top voice dropped an octave)
+// ---------------------------------------------------------------------------
+
+/**
+ * Classic jazz drop-2 open voicing: take the close-position voicing and drop the
+ * second-from-the-top voice down an octave. Reuses voiceClose as the basis so
+ * TENSION extensions and register anchoring behave identically; re-fits to range
+ * after the drop. (voiceWide layers extra SPREAD on top of the same idea; this
+ * mode is the plain drop-2.)
+ */
+function voiceDrop2(chord: Chord, r: Resolved): Voicing {
+  const close = sortAsc(voiceClose(chord, r))
+  if (close.length < 3) return close
+  const idx = close.length - 2 // second-from-top
+  const dropped = [...close.slice(0, idx), close[idx] - 12, ...close.slice(idx + 1)]
+  return fitToRange(sortAsc(dropped), r)
+}
+
+// ---------------------------------------------------------------------------
+// SHELL mode (guide-tone shell: root + 3rd + 7th, omit the 5th)
+// ---------------------------------------------------------------------------
+
+/**
+ * Guide-tone shell voicing: root + 3rd + 7th, omitting the (harmonically weak)
+ * 5th. The 3rd/7th are the guide tones that define the chord quality. For triads
+ * with no 7th we fall back to root + 3rd + (minimal) 5th so the chord is still
+ * fully stated. TENSION extensions are deliberately not consulted here — a shell
+ * is defined by its minimality. Anchoring/range handling matches voiceClose.
+ */
+function voiceShell(chord: Chord, r: Resolved): Voicing {
+  const ivs = chordIntervals(chord.family)
+  const third = ivs.find((iv) => iv === 3 || iv === 4)
+  // 7th/6th guide tone: min7=10, maj7=11, 6/dim7=9.
+  const seventh = ivs.find((iv) => iv === 9 || iv === 10 || iv === 11)
+  const fifth = ivs.find((iv) => iv === 6 || iv === 7 || iv === 8)
+  const chosen: number[] = [0]
+  if (third !== undefined) chosen.push(third)
+  if (seventh !== undefined) chosen.push(seventh)
+  else if (fifth !== undefined) chosen.push(fifth) // triad: minimal 5th
+  const pcs = chosen.map((iv) => mod12(chord.root + iv))
+  const start = r.center - 5
+  const lowest = nearestMidiToPc(pcs[0], start)
+  const v = sortAsc(stackUp(pcs, lowest, 0))
+  return fitToRange(v, r)
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -421,6 +492,12 @@ export function voiceChord(
       return voiceSmooth(chord, r, prev)
     case 'bass':
       return voiceBass(chord, r, prev)
+    case 'quartal':
+      return voiceQuartal(chord, r)
+    case 'drop2':
+      return voiceDrop2(chord, r)
+    case 'shell':
+      return voiceShell(chord, r)
     default:
       return voiceClose(chord, r)
   }

@@ -578,6 +578,66 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
           "family": "maj"
         }
       ]
+    },
+    {
+      "name": "Epic 8-Bar Uplifter",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 3,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 5,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "min"
+        }
+      ]
+    },
+    {
+      "name": "Emotional Breakdown",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "min"
+        },
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        }
+      ]
     }
   ],
   "dub-techno": [
@@ -1314,6 +1374,50 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
           "family": "maj7"
         }
       ]
+    },
+    {
+      "name": "Liquid ii-V Ladder",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 9,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Rhodes Cascade",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 9,
+          "family": "min9"
+        },
+        {
+          "offset": 5,
+          "family": "maj9"
+        },
+        {
+          "offset": 4,
+          "family": "min7"
+        }
+      ]
     }
   ],
   "house": [
@@ -1502,6 +1606,50 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
         {
           "offset": 5,
           "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Diva House",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 4,
+          "family": "min"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        }
+      ]
+    },
+    {
+      "name": "Soulful Maj9 Turn",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 9,
+          "family": "min9"
+        },
+        {
+          "offset": 2,
+          "family": "min9"
+        },
+        {
+          "offset": 7,
+          "family": "dom9"
         }
       ]
     }
@@ -2048,6 +2196,50 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
         {
           "offset": 10,
           "family": "dom9"
+        }
+      ]
+    },
+    {
+      "name": "2-Step Swing Turn",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        }
+      ]
+    },
+    {
+      "name": "R&B Lean",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
         }
       ]
     }
@@ -3198,6 +3390,94 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
           "family": "min7"
         }
       ]
+    },
+    {
+      "name": "1-6-2-5 Sevenths",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Lo-Fi Blues",
+      "mode": "mixolydian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Dorian Maj-IV Vamp",
+      "mode": "dorian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min9"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "min9"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Secondary Dom Turn",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 4,
+          "family": "dom7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 5,
+          "family": "maj7"
+        }
+      ]
     }
   ],
   "synthwave": [
@@ -3404,6 +3684,50 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
           "family": "maj"
         }
       ]
+    },
+    {
+      "name": "80s Axis",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Dystopian Pulse",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "min"
+        }
+      ]
     }
   ],
   "deep-house": [
@@ -3600,6 +3924,90 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
         {
           "offset": 7,
           "family": "sus4"
+        }
+      ]
+    },
+    {
+      "name": "Min9 Planing Chain",
+      "mode": "dorian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min9"
+        },
+        {
+          "offset": 10,
+          "family": "min9"
+        },
+        {
+          "offset": 8,
+          "family": "min9"
+        },
+        {
+          "offset": 10,
+          "family": "min9"
+        }
+      ]
+    },
+    {
+      "name": "Larry Heard",
+      "mode": "dorian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min9"
+        },
+        {
+          "offset": 5,
+          "family": "min9"
+        },
+        {
+          "offset": 10,
+          "family": "dom9"
+        },
+        {
+          "offset": 3,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "Sus2-Sus4 Pump",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "sus2"
+        },
+        {
+          "offset": 0,
+          "family": "sus4"
+        },
+        {
+          "offset": 0,
+          "family": "sus2"
+        },
+        {
+          "offset": 0,
+          "family": "sus4"
+        }
+      ]
+    },
+    {
+      "name": "Maj7 ii-V Feel",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min9"
+        },
+        {
+          "offset": 7,
+          "family": "dom9"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
         }
       ]
     }
@@ -3806,6 +4214,1548 @@ export const PROGRESSION_LIBRARY: ProgressionLibrary = {
         {
           "offset": 1,
           "family": "maj"
+        }
+      ]
+    }
+  ],
+  "jazz": [
+    {
+      "name": "Major ii–V–I",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "13"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Minor ii–V–i",
+      "mode": "harmonic-minor",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "m7b5"
+        },
+        {
+          "offset": 7,
+          "family": "7b9"
+        },
+        {
+          "offset": 0,
+          "family": "minMaj7"
+        }
+      ]
+    },
+    {
+      "name": "Rhythm Changes A",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "So What Modal",
+      "mode": "dorian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min7"
+        },
+        {
+          "offset": 1,
+          "family": "min7"
+        }
+      ]
+    },
+    {
+      "name": "Autumn Leaves",
+      "mode": "harmonic-minor",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "min7"
+        },
+        {
+          "offset": 10,
+          "family": "dom7"
+        },
+        {
+          "offset": 3,
+          "family": "maj7"
+        },
+        {
+          "offset": 8,
+          "family": "maj7"
+        },
+        {
+          "offset": 2,
+          "family": "m7b5"
+        },
+        {
+          "offset": 7,
+          "family": "7b9"
+        },
+        {
+          "offset": 0,
+          "family": "min7"
+        }
+      ]
+    },
+    {
+      "name": "Minor Turnaround",
+      "mode": "melodic-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min9"
+        },
+        {
+          "offset": 8,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "m7b5"
+        },
+        {
+          "offset": 7,
+          "family": "7#9"
+        }
+      ]
+    },
+    {
+      "name": "Giant Steps Cycle",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 3,
+          "family": "dom7"
+        },
+        {
+          "offset": 8,
+          "family": "maj7"
+        },
+        {
+          "offset": 11,
+          "family": "dom7"
+        },
+        {
+          "offset": 4,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Bird Turnaround",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 9,
+          "family": "7b9"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Backdoor Cadence",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "min7"
+        },
+        {
+          "offset": 10,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Tritone Turnaround",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 3,
+          "family": "7#9"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 1,
+          "family": "13"
+        }
+      ]
+    },
+    {
+      "name": "Jazz Blues",
+      "mode": "mixolydian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 9,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Bird Blues",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 11,
+          "family": "m7b5"
+        },
+        {
+          "offset": 4,
+          "family": "dom7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "dom7"
+        },
+        {
+          "offset": 7,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Rhythm Changes Bridge",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 4,
+          "family": "dom7"
+        },
+        {
+          "offset": 9,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "dom7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "1-6-2-5 Turnaround",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Lady Bird Turnaround",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 3,
+          "family": "maj7"
+        },
+        {
+          "offset": 8,
+          "family": "maj7"
+        },
+        {
+          "offset": 1,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Coltrane ii-V Reharm",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 3,
+          "family": "dom7"
+        },
+        {
+          "offset": 8,
+          "family": "maj7"
+        },
+        {
+          "offset": 11,
+          "family": "dom7"
+        },
+        {
+          "offset": 4,
+          "family": "maj7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "ii-V of IV",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 7,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "maj7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "ii-V of vi",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 11,
+          "family": "m7b5"
+        },
+        {
+          "offset": 4,
+          "family": "7b9"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Minor Line Cliche",
+      "mode": "melodic-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 0,
+          "family": "minMaj7"
+        },
+        {
+          "offset": 0,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "min6"
+        }
+      ]
+    },
+    {
+      "name": "Satin Doll ii-V Chain",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 9,
+          "family": "dom7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    }
+  ],
+  "pop": [
+    {
+      "name": "Axis I–V–vi–IV",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Sensitive vi–IV–I–V",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 9,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Doo-Wop I–vi–IV–V",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Pop-Punk Power Four",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "5"
+        },
+        {
+          "offset": 7,
+          "family": "5"
+        },
+        {
+          "offset": 9,
+          "family": "5"
+        },
+        {
+          "offset": 5,
+          "family": "5"
+        }
+      ]
+    },
+    {
+      "name": "Aeolian i–bVI–bIII–bVII",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 3,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Singer-Songwriter I–iii–IV–V",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 4,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Four-Chord IV–I–V–vi",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        }
+      ]
+    },
+    {
+      "name": "Rotation V–vi–IV–I",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Anthemic I–IV–vi–V",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "add9"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "sus4"
+        }
+      ]
+    },
+    {
+      "name": "Aeolian Pop i–bVI–bVII",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Royal Road",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "maj7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        }
+      ]
+    },
+    {
+      "name": "Canon",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "min"
+        },
+        {
+          "offset": 4,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Creep",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 4,
+          "family": "maj"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 5,
+          "family": "min"
+        }
+      ]
+    },
+    {
+      "name": "Lament Line Cliche",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 0,
+          "family": "minMaj7"
+        },
+        {
+          "offset": 0,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "min6"
+        }
+      ]
+    },
+    {
+      "name": "Andalusian Pop",
+      "mode": "harmonic-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        }
+      ]
+    }
+  ],
+  "cinematic": [
+    {
+      "name": "Epic Minor i–bVI–bIII–bVII",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 3,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Lydian Wonder I–II",
+      "mode": "lydian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7#11"
+        },
+        {
+          "offset": 2,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Suspended Pedal",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "sus2"
+        },
+        {
+          "offset": 0,
+          "family": "sus4"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Chromatic Mediants",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 3,
+          "family": "maj"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Neo-Soul Lush 9ths",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 5,
+          "family": "maj9"
+        },
+        {
+          "offset": 9,
+          "family": "min9"
+        },
+        {
+          "offset": 2,
+          "family": "min9"
+        }
+      ]
+    },
+    {
+      "name": "Aeolian Film Cue",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "min"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Heroic bVII–IV–I",
+      "mode": "mixolydian",
+      "chords": [
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Lydian Float",
+      "mode": "lydian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 7,
+          "family": "maj"
+        },
+        {
+          "offset": 2,
+          "family": "maj7#11"
+        }
+      ]
+    },
+    {
+      "name": "Descending Line Cliché",
+      "mode": "harmonic-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 0,
+          "family": "minMaj7"
+        },
+        {
+          "offset": 0,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "min6"
+        }
+      ]
+    },
+    {
+      "name": "Ominous Phrygian bII",
+      "mode": "phrygian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 1,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Hollywood Cadence",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Skywalker Mixolydian",
+      "mode": "mixolydian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Andalusian Descent",
+      "mode": "harmonic-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        }
+      ]
+    },
+    {
+      "name": "Dorian Hope",
+      "mode": "dorian",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "min"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Interstellar Oscillation",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 10,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "min"
+        }
+      ]
+    },
+    {
+      "name": "Major-Third Planing",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 8,
+          "family": "maj"
+        },
+        {
+          "offset": 4,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    }
+  ],
+  "gospel": [
+    {
+      "name": "2–5–1 Extended",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min9"
+        },
+        {
+          "offset": 7,
+          "family": "13"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "Gospel Walk-Up",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 5,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Amen Plagal IV–I",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Passing Diminished",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 1,
+          "family": "dim"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        }
+      ]
+    },
+    {
+      "name": "Tritone-Sub 2–5–1",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min9"
+        },
+        {
+          "offset": 1,
+          "family": "13"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "6–2–5–1 Turnaround",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "13"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "Shout 1–4 Vamp",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 5,
+          "family": "maj9"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 7,
+          "family": "13"
+        }
+      ]
+    },
+    {
+      "name": "Minor Gospel i–iv–V",
+      "mode": "harmonic-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min9"
+        },
+        {
+          "offset": 5,
+          "family": "min9"
+        },
+        {
+          "offset": 7,
+          "family": "7b9"
+        }
+      ]
+    },
+    {
+      "name": "Lush Maj9 Bed",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj9"
+        },
+        {
+          "offset": 4,
+          "family": "min9"
+        },
+        {
+          "offset": 5,
+          "family": "maj9"
+        },
+        {
+          "offset": 7,
+          "family": "13"
+        }
+      ]
+    },
+    {
+      "name": "Backdoor Amen bVII–IV–I",
+      "mode": "mixolydian",
+      "chords": [
+        {
+          "offset": 10,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "maj"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "3-6-2-5-1",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 9,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "1-4 Walk-Up",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 0,
+          "family": "dom7"
+        },
+        {
+          "offset": 5,
+          "family": "maj7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "So-What Cadence",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 7,
+          "family": "7sus4"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "Neo-Gospel Descent",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 5,
+          "family": "maj9"
+        },
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 0,
+          "family": "maj9"
+        }
+      ]
+    },
+    {
+      "name": "Praise Break Cycle",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj"
+        },
+        {
+          "offset": 9,
+          "family": "dom7"
+        },
+        {
+          "offset": 2,
+          "family": "dom7"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj"
+        }
+      ]
+    },
+    {
+      "name": "Minor Gospel Circle",
+      "mode": "natural-minor",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "min7"
+        },
+        {
+          "offset": 5,
+          "family": "min7"
+        },
+        {
+          "offset": 10,
+          "family": "dom7"
+        },
+        {
+          "offset": 3,
+          "family": "maj7"
+        },
+        {
+          "offset": 8,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Sharp-iv Diminished",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 0,
+          "family": "maj7"
+        },
+        {
+          "offset": 6,
+          "family": "dim"
+        },
+        {
+          "offset": 7,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
+        }
+      ]
+    },
+    {
+      "name": "Tritone Walkdown 2-5-1",
+      "mode": "major",
+      "chords": [
+        {
+          "offset": 4,
+          "family": "min7"
+        },
+        {
+          "offset": 2,
+          "family": "min7"
+        },
+        {
+          "offset": 1,
+          "family": "dom7"
+        },
+        {
+          "offset": 0,
+          "family": "maj7"
         }
       ]
     }

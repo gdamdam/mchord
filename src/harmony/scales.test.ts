@@ -27,6 +27,12 @@ describe('scaleSemitones', () => {
     expect(scaleSemitones('harmonic-minor')).toEqual([0, 2, 3, 5, 7, 8, 11])
   })
 
+  it('locrian / melodic-minor / harmonic-major', () => {
+    expect(scaleSemitones('locrian')).toEqual([0, 1, 3, 5, 6, 8, 10])
+    expect(scaleSemitones('melodic-minor')).toEqual([0, 2, 3, 5, 7, 9, 11])
+    expect(scaleSemitones('harmonic-major')).toEqual([0, 2, 4, 5, 7, 8, 11])
+  })
+
   it('returns a copy (no mutation of internal table)', () => {
     const a = scaleSemitones('major')
     a[0] = 99

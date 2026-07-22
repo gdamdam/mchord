@@ -23,6 +23,13 @@ const CHORD_TABLE: Record<ChordFamily, number[]> = {
   dom9: [0, 4, 7, 10, 14],
   '6': [0, 4, 7, 9],
   min6: [0, 3, 7, 9],
+  m7b5: [0, 3, 6, 10], // half-diminished
+  '7b9': [0, 4, 7, 10, 13], // ♭9 above the octave (stacked-third spelling)
+  '7#9': [0, 4, 7, 10, 15], // ♯9 above the octave
+  '13': [0, 4, 7, 10, 14, 21], // dom7 + 9th + 13th (11th omitted, as voiced)
+  'maj7#11': [0, 4, 7, 11, 18], // ♯11 above the octave (Lydian)
+  '7sus4': [0, 5, 7, 10],
+  '5': [0, 7], // power chord
 }
 
 /** Semitones from the root (ascending, root = 0) for a chord family. */

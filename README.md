@@ -10,9 +10,9 @@
 ┛┗┗┗┛┗┗┛┛ ┗┻
 </pre>
 
-[![version](https://img.shields.io/badge/version-1.4.6-6c8f3a)](./package.json)
+[![version](https://img.shields.io/badge/version-1.8.0-6c8f3a)](./package.json)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](./LICENSE)
-[![tests](https://img.shields.io/badge/tests-385%20passing-2ea043)](#verification)
+[![tests](https://img.shields.io/badge/tests-481%20passing-2ea043)](#verification)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](./tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
@@ -33,12 +33,12 @@
 
 ## Highlights
 
-- **Harmony-first** — think in chords and progressions, not individual notes. Twelve keys, seven modes (major, natural minor, dorian, mixolydian, phrygian, lydian, harmonic minor), and sixteen chord families.
-- **Deterministic voice leading** — five modes (Root · Close · Smooth · Wide · Bass). Smooth/Bass search inversions and octaves to minimise total semitone movement between adjacent chords, penalising voice crossing and out-of-range notes — the same progression voices the same way every time.
+- **Harmony-first** — think in chords and progressions, not individual notes. Twelve keys, ten modes (major, natural minor, dorian, mixolydian, phrygian, lydian, harmonic minor, locrian, melodic minor, harmonic major), and twenty-three chord families (triads, 6ths, 7ths, 9ths, sus, half-diminished, altered dominants, 13ths, maj7♯11, power).
+- **Deterministic voice leading** — eight modes (Root · Close · Smooth · Wide · Bass · Quartal · Drop-2 · Shell). Smooth/Bass search inversions and octaves to minimise total semitone movement between adjacent chords, penalising voice crossing and out-of-range notes; Quartal stacks fourths, Drop-2 opens a close voicing, and Shell keeps just the guide tones — the same progression voices the same way every time.
 - **Eight chord slots** with a moving playhead — active (amber) and queued (rose) states are unmistakable. Each slot shows its Roman numeral, key-correct name, compact spelling, and a stability/colour cue.
 - **Loop the slots you want** — set the loop length (1–8); slots beyond it stay editable but parked (silent).
 - **Harmonically-aware palette** — diatonic chords first, then borrowed and chromatic, coloured by stability so tension reads at a glance.
-- **Genre progression library** — 200 curated chord progressions across 20 electronic genres (mirroring mpump's genre list); load one into your current key with a click. Click the BPM readout to type an exact tempo.
+- **Genre progression library** — 287 curated chord progressions across 24 genres: 20 electronic genres (mirroring mpump's genre list) plus jazz, pop, cinematic, and gospel banks; load one into your current key with a click. Or **type a progression by name** (`Cmaj7 Am7 Dm7 G7`) from the header and drop it straight into the slots. Click the BPM readout to type an exact tempo.
 - **Four performance macros** — Tension · Spread · Motion · Color — each sweeps a curated group of voicing and synth parameters.
 - **37 play styles in 7 groups** — Block, Arp (up/down/updown/broken + converge/diverge/thumb/octaves), Strum, Melodic (guide-tone/top-line/pedal), Ostinato (Alberti/gallop/cell), Euclidean (E3/E5/E7), and **Split (bass + melody)** — performances that play the chord as a low bass voice plus a moving melody/arp in a different octave (house, techno, trance, dub, synthwave, lo-fi, garage, ambient, dubstep, downtempo, psy, DnB). All responsive to BPM, swing, and Motion, with forward / reverse / pendulum / seeded-random playback.
 - **Built-in polyphonic synth** — eight authored presets and four macros over a native Web Audio voice graph (detuned oscillators, filter + ADSR, stereo spread) into a glue compressor and a native master limiter. Click-free preset changes, panic, no hung notes.

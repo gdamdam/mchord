@@ -21,6 +21,7 @@ export {
 } from './chords'
 
 export { noteNameInKey, spellChord, chordName } from './spelling'
+export { parseChordName, parseChordLine, type ParsedToken } from './chordParse'
 
 export {
   romanNumeral,

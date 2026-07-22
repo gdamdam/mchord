@@ -241,6 +241,84 @@ describe('bass mode respects the range floor (D1)', () => {
   })
 })
 
+const Cmaj7: Chord = { root: 0, family: 'maj7' }
+
+describe('quartal mode', () => {
+  it('builds a stack of perfect fourths rooted on a chord tone', () => {
+    const v = voiceChord(Cmaj7, { mode: 'quartal' }, null)
+    const sorted = [...v].sort((a, b) => a - b)
+    // Rooted on the chord root (C).
+    expect(((sorted[0] % 12) + 12) % 12).toBe(0)
+    // Consecutive intervals are perfect fourths (5 semitones).
+    for (let i = 1; i < sorted.length; i++) {
+      expect(sorted[i] - sorted[i - 1]).toBe(5)
+    }
+    // Fourth-stack colour pcs for C: C, F, Bb, Eb.
+    expect(chordPcSet(v)).toEqual(new Set([0, 5, 10, 3]))
+  })
+
+  it('yields at least 3 voices for a triad and stays in range', () => {
+    const v = voiceChord(C, { mode: 'quartal', minMidi: 40, maxMidi: 80 }, null)
+    expect(v.length).toBeGreaterThanOrEqual(3)
+    for (const n of v) {
+      expect(n).toBeGreaterThanOrEqual(40)
+      expect(n).toBeLessThanOrEqual(80)
+    }
+  })
+})
+
+describe('drop2 mode', () => {
+  it('preserves the chord pitch classes and opens wider than close', () => {
+    const drop = voiceChord(Cmaj7, { mode: 'drop2' }, null)
+    const close = voiceChord(Cmaj7, { mode: 'close' }, null)
+    expect(chordPcSet(drop)).toEqual(new Set([0, 4, 7, 11]))
+    const span = (v: Voicing) => Math.max(...v) - Math.min(...v)
+    expect(span(drop)).toBeGreaterThan(span(close))
+  })
+
+  it('stays within range across roots', () => {
+    for (let root = 0; root < 12; root++) {
+      const v = voiceChord(
+        { root, family: 'dom7' },
+        { mode: 'drop2', minMidi: 40, maxMidi: 80 },
+        null,
+      )
+      for (const n of v) {
+        expect(n).toBeGreaterThanOrEqual(40)
+        expect(n).toBeLessThanOrEqual(80)
+      }
+    }
+  })
+})
+
+describe('shell mode', () => {
+  it('keeps root + 3rd + 7th and omits the 5th (Cmaj7)', () => {
+    const v = voiceChord(Cmaj7, { mode: 'shell' }, null)
+    // root(0) + 3rd(4) + 7th(11); no 5th (7).
+    expect(chordPcSet(v)).toEqual(new Set([0, 4, 11]))
+    expect(chordPcSet(v).has(7)).toBe(false)
+  })
+
+  it('falls back to root+3rd+5th for a triad with no 7th', () => {
+    const v = voiceChord(C, { mode: 'shell' }, null)
+    expect(chordPcSet(v)).toEqual(new Set([0, 4, 7]))
+  })
+
+  it('stays within range', () => {
+    const v = voiceChord(
+      { root: 2, family: 'min7' },
+      { mode: 'shell', minMidi: 40, maxMidi: 80 },
+      null,
+    )
+    // Dm7 shell: D(2) + F(5) + C(0); no 5th (9).
+    expect(chordPcSet(v)).toEqual(new Set([2, 5, 0]))
+    for (const n of v) {
+      expect(n).toBeGreaterThanOrEqual(40)
+      expect(n).toBeLessThanOrEqual(80)
+    }
+  })
+})
+
 describe('bass mode does not collapse to duplicate ceiling notes (D2)', () => {
   it('re-spreads upper voices near maxMidi instead of stacking duplicates', () => {
     // Previously produced [65,67,74,80,80,80] — three lost voices at the top.

@@ -116,6 +116,29 @@ describe('spellChord (stacked thirds)', () => {
       'C♯',
     ])
   })
+
+  it('extended families spell their tensions by generic degree (C key)', () => {
+    // half-diminished: root ♭3 ♭5 ♭7
+    expect(spellChord({ root: 0, family: 'm7b5' }, 0, 'major')).toEqual([
+      'C', 'E♭', 'G♭', 'B♭',
+    ])
+    // ♭9 spells as a 2nd letter (D♭), not a 3rd (C♯)
+    expect(spellChord({ root: 0, family: '7b9' }, 0, 'major')).toEqual([
+      'C', 'E', 'G', 'B♭', 'D♭',
+    ])
+    // ♯9 spells as a 2nd letter (D♯), not a 3rd (E♭)
+    expect(spellChord({ root: 0, family: '7#9' }, 0, 'major')).toEqual([
+      'C', 'E', 'G', 'B♭', 'D♯',
+    ])
+    // ♯11 spells as a 4th letter (F♯)
+    expect(spellChord({ root: 0, family: 'maj7#11' }, 0, 'major')).toEqual([
+      'C', 'E', 'G', 'B', 'F♯',
+    ])
+    // 13 spells as a 6th letter (A)
+    expect(spellChord({ root: 0, family: '13' }, 0, 'major')).toEqual([
+      'C', 'E', 'G', 'B♭', 'D', 'A',
+    ])
+  })
 })
 
 describe('chordName', () => {

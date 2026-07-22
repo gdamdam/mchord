@@ -33,6 +33,10 @@ export const GENRES = [
   'synthwave',
   'deep-house',
   'psytrance',
+  'jazz',
+  'pop',
+  'cinematic',
+  'gospel',
 ] as const
 export type Genre = (typeof GENRES)[number]
 
@@ -57,6 +61,10 @@ export const GENRE_LABELS: Record<Genre, string> = {
   synthwave: 'Synthwave',
   'deep-house': 'Deep House',
   psytrance: 'Psytrance',
+  jazz: 'Jazz',
+  pop: 'Pop',
+  cinematic: 'Cinematic',
+  gospel: 'Gospel',
 }
 
 /** One chord of a preset: a semitone offset (0–11) above the tonic + a family. */

@@ -34,6 +34,11 @@ export const MODES = [
   'phrygian',
   'lydian',
   'harmonic-minor',
+  // v1.7 — appended (never reorder: codec/persistence index into this array).
+  // All heptatonic, so they drop straight into the 7-degree palette/roman engine.
+  'locrian', // completes the seven modes of the major scale
+  'melodic-minor', // jazz minor
+  'harmonic-major', // major with a lowered 6th
 ] as const
 export type Mode = (typeof MODES)[number]
 
@@ -62,6 +67,14 @@ export const CHORD_FAMILIES = [
   'dom9',
   '6',
   'min6',
+  // v1.7 — appended (never reorder: codec/persistence index into this array).
+  'm7b5', // half-diminished — required for minor ii–V–i
+  '7b9', // altered dominant (♭9)
+  '7#9', // altered dominant (♯9, "Hendrix")
+  '13', // dominant 13th
+  'maj7#11', // Lydian major color
+  '7sus4', // suspended dominant
+  '5', // power chord (root + fifth)
 ] as const
 export type ChordFamily = (typeof CHORD_FAMILIES)[number]
 
@@ -102,7 +115,17 @@ export interface PaletteChord {
 // Voicing
 // ---------------------------------------------------------------------------
 
-export const VOICING_MODES = ['root', 'close', 'smooth', 'wide', 'bass'] as const
+export const VOICING_MODES = [
+  'root',
+  'close',
+  'smooth',
+  'wide',
+  'bass',
+  // v1.7 — appended (never reorder: codec/persistence index into this array).
+  'quartal', // stacked fourths (modal / "So What")
+  'drop2', // close voicing with the 2nd-from-top voice dropped an octave
+  'shell', // guide-tone shell (root + 3rd + 7th)
+] as const
 export type VoicingMode = (typeof VOICING_MODES)[number]
 
 /**

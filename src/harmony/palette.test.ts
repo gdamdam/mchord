@@ -65,12 +65,13 @@ describe('diatonicChords (other modes)', () => {
 })
 
 describe('diatonicSevenths (major)', () => {
-  it('C major: Imaj7 ii7 iii7 IVmaj7 V7 vi7 vii(half-dim≈min7)', () => {
+  it('C major: Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7', () => {
     const c = diatonicSevenths(0, 'major')
     expect(c[0]).toEqual({ root: 0, family: 'maj7' })
     expect(c[1]).toEqual({ root: 2, family: 'min7' })
     expect(c[3]).toEqual({ root: 5, family: 'maj7' })
     expect(c[4]).toEqual({ root: 7, family: 'dom7' })
+    expect(c[6]).toEqual({ root: 11, family: 'm7b5' }) // half-diminished, now a first-class family
   })
 })
 

@@ -10,17 +10,19 @@ interface SliderProps {
   onChange: (value: number, transient?: boolean) => void
   /** Render the current value for display + screen-reader text. */
   format?: (value: number) => string
+  /** Native hover tooltip explaining what the control does. */
+  title?: string
 }
 
 /**
  * Labelled native range input. Native <input type=range> gives keyboard control
  * and screen-reader support for free; we add a visible value readout.
  */
-export function Slider({ label, value, min, max, step = 1, onChange, format }: SliderProps) {
+export function Slider({ label, value, min, max, step = 1, onChange, format, title }: SliderProps) {
   const shown = format ? format(value) : String(value)
   const { commit, dragProps } = useDragCommit(onChange)
   return (
-    <label className="slider">
+    <label className="slider" title={title}>
       <span className="slider__label">
         <span>{label}</span>
         <span className="slider__value">{shown}</span>

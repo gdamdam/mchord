@@ -17,6 +17,10 @@ interface SelectProps {
   options?: SelectOption[]
   groups?: SelectGroup[]
   onChange: (value: string) => void
+  /** When true the control is dimmed and non-interactive (e.g. a setting made
+   *  inert by another parameter). `title` explains why on hover. */
+  disabled?: boolean
+  title?: string
 }
 
 /**
@@ -25,7 +29,7 @@ interface SelectProps {
  * a listbox; arrow keys move the active option (aria-activedescendant), Enter/Space
  * selects, Escape closes, click-outside dismisses, and focus returns to the button.
  */
-export function Select({ label, value, options, groups, onChange }: SelectProps) {
+export function Select({ label, value, options, groups, onChange, disabled, title }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -137,7 +141,7 @@ export function Select({ label, value, options, groups, onChange }: SelectProps)
   let flatIndex = -1
 
   return (
-    <div className="field" ref={rootRef}>
+    <div className={`field${disabled ? ' is-disabled' : ''}`} ref={rootRef} title={title}>
       <span className="field__label" id={`${id}-label`}>
         {label}
       </span>
@@ -148,6 +152,7 @@ export function Select({ label, value, options, groups, onChange }: SelectProps)
           className="dropdown__button"
           aria-haspopup="listbox"
           aria-expanded={open}
+          disabled={disabled}
           aria-labelledby={`${id}-label ${id}-value`}
           onClick={() => (open ? setOpen(false) : openList())}
           onKeyDown={onButtonKey}

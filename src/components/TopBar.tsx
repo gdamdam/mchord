@@ -23,6 +23,7 @@ interface TopBarProps {
   onMasterVolume: (volume: number) => void
   midi: MidiControls
   onOpenAdvanced: () => void
+  onOpenChords: () => void
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -51,6 +52,7 @@ export function TopBar({
   onMasterVolume,
   midi,
   onOpenAdvanced,
+  onOpenChords,
 }: TopBarProps) {
   const menuRef = useRef<HTMLDetailsElement>(null)
   const midiMenuRef = useRef<HTMLDetailsElement>(null)
@@ -254,16 +256,11 @@ export function TopBar({
         </details>
         <button
           type="button"
-          className={`session-menu__button${link.enabled ? ' is-on' : ''}`}
-          aria-pressed={link.enabled}
-          title={
-            link.enabled
-              ? 'Ableton Link on — needs the mpump Link Bridge to connect'
-              : 'Enable Ableton Link (needs the mpump Link Bridge; harmless without it)'
-          }
-          onClick={() => link.enable(!link.enabled)}
+          className="session-menu__button"
+          title="Type a chord progression by name and drop it into the slots"
+          onClick={onOpenChords}
         >
-          {link.enabled ? 'Link on' : 'Enable Link'}
+          ⌨ Chords
         </button>
         <button
           type="button"
@@ -327,19 +324,26 @@ export function TopBar({
           <span className="mbus-btn__dot" aria-hidden="true" />
           {mbusPublishing ? 'bus on' : 'bus'}
         </button>
-        <span
-          className={`link-pill${link.state.connected ? ' is-on' : ''}`}
+        <button
+          type="button"
+          className={`link-btn${link.enabled ? ' is-on' : ''}${link.state.connected ? ' is-connected' : ''}`}
+          aria-pressed={link.enabled}
           title={
-            link.state.connected
-              ? `Ableton Link: following ${effectiveBpm.toFixed(1)} BPM`
-              : 'Ableton Link offline'
+            link.enabled
+              ? link.state.connected
+                ? `Ableton Link: following ${effectiveBpm.toFixed(1)} BPM · ${link.state.peers} peer${link.state.peers === 1 ? '' : 's'}. Click to turn off.`
+                : 'Ableton Link on — needs the mpump Link Bridge to connect. Click to turn off.'
+              : 'Enable Ableton Link (needs the mpump Link Bridge; harmless without it)'
           }
+          onClick={() => link.enable(!link.enabled)}
         >
-          <span className="link-pill__dot" aria-hidden="true" />
-          {link.state.connected
-            ? `Link ${effectiveBpm.toFixed(1)} · ${link.state.peers} peer${link.state.peers === 1 ? '' : 's'}`
-            : 'Link off'}
-        </span>
+          <span className="link-btn__dot" aria-hidden="true" />
+          {link.enabled
+            ? link.state.connected
+              ? `Link ${effectiveBpm.toFixed(1)} · ${link.state.peers} peer${link.state.peers === 1 ? '' : 's'}`
+              : 'Link on'
+            : 'Enable Link'}
+        </button>
         <Meter getLevel={getLevel} />
       </div>
     </header>

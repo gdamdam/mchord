@@ -75,6 +75,10 @@ export function HarmonyControls(props: HarmonyControlsProps) {
     if (preset) onTuning({ name: preset.name, centsOffset: [...preset.centsOffset], anchor: preset.anchor })
   }
 
+  // With an all-zero cents table (Equal 12-TET) the anchor rotates nothing, so
+  // the control is inert — dim it rather than imply it does something.
+  const anchorInert = tuning.centsOffset.every((c) => c === 0)
+
   /** Anchor selector value: 'key' or the fixed pitch class as a string. */
   const ANCHOR_KEY = 'key'
   const anchorValue = tuning.anchor.mode === 'key' ? ANCHOR_KEY : String(tuning.anchor.pc)
@@ -103,6 +107,7 @@ export function HarmonyControls(props: HarmonyControlsProps) {
       <div className="controls__row">
         <Select
           label="Key"
+          title="The tonic (root) of the progression. Every chord is spelled and voiced relative to this key."
           value={String(props.keyRoot)}
           onChange={(v) => props.onKey(Number(v))}
           options={ROOT_LABELS.map((label, i) => ({ value: String(i), label })).sort((a, b) =>
@@ -111,16 +116,32 @@ export function HarmonyControls(props: HarmonyControlsProps) {
         />
         <Select
           label="Mode"
+          title="The scale the harmony is drawn from — it sets which chords are diatonic and how the Roman numerals read."
           value={props.mode}
           onChange={(v) => props.onMode(v as Mode)}
           options={MODES.map((m) => ({ value: m, label: MODE_LABELS[m] })).sort((a, b) =>
             a.label.localeCompare(b.label),
           )}
         />
-        <Select label="Tuning" value={tuning.name} onChange={onTuningChange} options={tuningOptions} />
-        <div title="Which note the tuning is rooted on: JI & maqam scales want Follow key; historical well-temperaments are authentically Fixed C.">
-          <Select label="Anchor" value={anchorValue} onChange={onAnchorChange} options={anchorOptions} />
-        </div>
+        <Select
+          label="Tuning"
+          title="Microtuning applied to the internal synth's final pitches (Equal 12-TET is standard). MIDI output always stays 12-TET."
+          value={tuning.name}
+          onChange={onTuningChange}
+          options={tuningOptions}
+        />
+        <Select
+          label="Anchor"
+          value={anchorValue}
+          onChange={onAnchorChange}
+          options={anchorOptions}
+          disabled={anchorInert}
+          title={
+            anchorInert
+              ? 'Anchor applies only to microtunings — the current tuning is Equal (12-TET), so it has no effect.'
+              : 'Which note the tuning is rooted on: JI & maqam scales want Follow key; historical well-temperaments are authentically Fixed C.'
+          }
+        />
         <input
           ref={fileRef}
           type="file"
@@ -131,6 +152,7 @@ export function HarmonyControls(props: HarmonyControlsProps) {
         />
         <Select
           label="Sound"
+          title="The built-in synth preset used for local audio playback."
           value={props.preset}
           onChange={(v) => props.onPreset(v as PresetId)}
           options={PRESET_IDS.map((id) => ({ value: id, label: PRESETS[id].name })).sort((a, b) =>
@@ -139,6 +161,7 @@ export function HarmonyControls(props: HarmonyControlsProps) {
         />
         <Select
           label="Style"
+          title="How each chord is performed rhythmically — block, arpeggio, strum, melodic, ostinato, euclidean, or split bass+melody."
           value={props.rhythm}
           onChange={(v) => props.onRhythm(v as RhythmStyle)}
           groups={STYLE_GROUPS.map((g) => ({
@@ -153,18 +176,21 @@ export function HarmonyControls(props: HarmonyControlsProps) {
       <div className="controls__row">
         <Segmented<VoicingMode>
           label="Voice leading"
+          title="How chords are voiced across octaves. Smooth/Bass minimise movement between chords; Quartal, Drop-2, and Shell are jazz voicings."
           value={props.voicingMode}
           onChange={props.onVoicing}
           options={VOICING_MODES.map((m) => ({ value: m, label: VOICING_LABELS[m] }))}
         />
         <Segmented<Direction>
           label="Direction"
+          title="Playback order through the slots — forward, reverse, pendulum (back-and-forth), or seeded random."
           value={props.direction}
           onChange={props.onDirection}
           options={DIRECTIONS.map((d) => ({ value: d, label: DIRECTION_LABELS[d] }))}
         />
         <Select
           label="Loop"
+          title="How many of the 8 slots are included in the playback loop. Slots beyond it stay editable but silent."
           value={String(props.loopLength)}
           onChange={(v) => props.onLoopLength(Number(v))}
           options={Array.from({ length: SLOT_COUNT }, (_, i) => ({
@@ -175,6 +201,7 @@ export function HarmonyControls(props: HarmonyControlsProps) {
         <div className="controls__swing">
           <Slider
             label="Swing"
+            title="Delays the off-beats for a shuffled feel (0% = straight timing)."
             value={props.swing}
             min={0}
             max={1}

@@ -24,7 +24,8 @@ type Quality = 'major' | 'minor' | 'dim' | 'aug' | 'sus' | 'other'
 function qualityOf(chord: Chord): Quality {
   const iv = chordIntervals(chord.family)
   const has = (n: number) => iv.includes(n)
-  if (chord.family === 'sus2' || chord.family === 'sus4') return 'sus'
+  if (chord.family === 'sus2' || chord.family === 'sus4' || chord.family === '7sus4')
+    return 'sus'
   if (has(4) && has(8) && !has(7)) return 'aug'
   if (has(3) && has(6) && !has(7)) return 'dim'
   if (has(3) && has(7)) return 'minor'
@@ -60,6 +61,20 @@ function romanSuffix(chord: Chord): string {
       return 'sus2'
     case 'sus4':
       return 'sus4'
+    case 'm7b5':
+      return 'ø7'
+    case '7b9':
+      return '7♭9'
+    case '7#9':
+      return '7♯9'
+    case '13':
+      return '13'
+    case 'maj7#11':
+      return 'maj7♯11'
+    case '7sus4':
+      return '7sus4'
+    case '5':
+      return '5'
     default:
       return ''
   }

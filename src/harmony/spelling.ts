@@ -58,6 +58,9 @@ function keyPrefersFlats(keyRoot: PitchClass, mode: Mode): boolean {
     phrygian: 8, // Phrygian on E → C major
     lydian: 7, // Lydian on F → C major
     'harmonic-minor': 3, // treat like natural minor for signature direction
+    locrian: 1, // Locrian on B → C major (relative major a semitone up)
+    'melodic-minor': 3, // treat like natural minor for signature direction
+    'harmonic-major': 0, // major tonic (lowered 6th doesn't flip the signature)
   }
   const relMajor = mod12(keyRoot + REL_MAJOR_OFFSET[mode])
   if (FLAT_TONIC_MAJOR.has(relMajor)) return true
@@ -193,8 +196,14 @@ function genericStepForSemitone(semis: number): number {
     case 10:
     case 11:
       return 6 // minor / major 7th
+    case 13:
     case 14:
-      return 1 // 9th = 2nd letter, octave above
+    case 15:
+      return 1 // 9th (♭9/9/♯9) = 2nd letter, octave above
+    case 18:
+      return 3 // ♯11 = 4th letter, octave above (maj7♯11)
+    case 21:
+      return 5 // 13th = 6th letter, octave above
     default:
       return Math.round((semis / 12) * 7) % 7
   }
@@ -225,6 +234,13 @@ const FAMILY_SUFFIX: Record<Chord['family'], string> = {
   dom9: '9',
   '6': '6',
   min6: 'm6',
+  m7b5: 'm7♭5',
+  '7b9': '7♭9',
+  '7#9': '7♯9',
+  '13': '13',
+  'maj7#11': 'maj7♯11',
+  '7sus4': '7sus4',
+  '5': '5',
 }
 
 /** Absolute, key-appropriate chord name, e.g. "Dm7", "F♯dim", "B♭maj7". */

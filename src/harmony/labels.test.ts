@@ -101,6 +101,21 @@ describe('chordStability', () => {
   })
 })
 
+describe('romanNumeral (extended families)', () => {
+  it('half-diminished vii in a major key reads viiø7', () => {
+    expect(romanNumeral({ root: 11, family: 'm7b5' }, 0, 'major')).toBe('viiø7')
+  })
+  it('altered dominants keep the V numeral with their suffix', () => {
+    expect(romanNumeral({ root: 7, family: '7b9' }, 0, 'major')).toBe('V7♭9')
+    expect(romanNumeral({ root: 7, family: '7#9' }, 0, 'major')).toBe('V7♯9')
+    expect(romanNumeral({ root: 7, family: '13' }, 0, 'major')).toBe('V13')
+  })
+  it('maj7♯11 stays uppercase; 7sus4 is a suspended (uppercase) numeral', () => {
+    expect(romanNumeral({ root: 0, family: 'maj7#11' }, 0, 'major')).toBe('Imaj7♯11')
+    expect(romanNumeral({ root: 7, family: '7sus4' }, 0, 'major')).toBe('V7sus4')
+  })
+})
+
 describe('chordLabel', () => {
   it('assembles all fields', () => {
     const l = chordLabel({ root: 2, family: 'min7' }, 0, 'major')

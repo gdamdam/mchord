@@ -14,6 +14,8 @@ interface SegmentedProps<T extends string> {
   onChange: (value: T) => void
   /** Visually hide the group label (still read by screen readers). */
   hideLabel?: boolean
+  /** Native hover tooltip explaining what the control does. */
+  title?: string
 }
 
 /**
@@ -27,12 +29,13 @@ export function Segmented<T extends string>({
   options,
   onChange,
   hideLabel,
+  title,
 }: SegmentedProps<T>) {
   // Unique per instance so two Segmented groups that share a `label` don't
   // merge into one radio group (which let a click clear the other's selection). G8
   const groupName = useId()
   return (
-    <fieldset className="segmented">
+    <fieldset className="segmented" title={title}>
       <legend className={hideLabel ? 'sr-only' : 'segmented__legend'}>{label}</legend>
       <div className="segmented__row">
         {options.map((opt) => (

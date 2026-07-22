@@ -16,9 +16,27 @@ describe('progression library', () => {
     for (const g of GENRES) expect(GENRE_LABELS[g]).toBeTruthy()
   })
 
-  it('has exactly 10 progressions per genre', () => {
+  it('has 5–30 progressions per genre', () => {
+    // Variable per genre: idiom-rich genres (jazz/gospel) carry more; vamp-based
+    // genres fewer. Bounds keep every genre useful without unbounded bloat.
     for (const g of GENRES) {
-      expect(PROGRESSION_LIBRARY[g], g).toHaveLength(10)
+      expect(PROGRESSION_LIBRARY[g].length, `${g}: count`).toBeGreaterThanOrEqual(5)
+      expect(PROGRESSION_LIBRARY[g].length, `${g}: count`).toBeLessThanOrEqual(30)
+    }
+  })
+
+  it('preset names are unique within each genre', () => {
+    for (const g of GENRES) {
+      const names = PROGRESSION_LIBRARY[g].map((p) => p.name)
+      expect(new Set(names).size, `${g}: duplicate name`).toBe(names.length)
+    }
+  })
+
+  it('includes the jazz/pop/cinematic/gospel banks', () => {
+    for (const g of ['jazz', 'pop', 'cinematic', 'gospel'] as const) {
+      expect(GENRES).toContain(g)
+      expect(GENRE_LABELS[g], `${g}: label`).toBeTruthy()
+      expect(PROGRESSION_LIBRARY[g].length, `${g}: count`).toBeGreaterThanOrEqual(5)
     }
   })
 

@@ -11,7 +11,8 @@ describe('chordIntervals', () => {
   it('covers every family with root 0 and ascending order', () => {
     for (const f of CHORD_FAMILIES) {
       const iv = chordIntervals(f)
-      expect(iv.length).toBeGreaterThanOrEqual(3)
+      // Most families are triads+, but the power chord ('5') is a 2-note dyad.
+      expect(iv.length).toBeGreaterThanOrEqual(f === '5' ? 2 : 3)
       expect(iv[0]).toBe(0)
       for (let i = 1; i < iv.length; i++) {
         expect(iv[i]).toBeGreaterThan(iv[i - 1])
@@ -36,6 +37,13 @@ describe('chordIntervals', () => {
     expect(chordIntervals('dom9')).toEqual([0, 4, 7, 10, 14])
     expect(chordIntervals('6')).toEqual([0, 4, 7, 9])
     expect(chordIntervals('min6')).toEqual([0, 3, 7, 9])
+    expect(chordIntervals('m7b5')).toEqual([0, 3, 6, 10])
+    expect(chordIntervals('7b9')).toEqual([0, 4, 7, 10, 13])
+    expect(chordIntervals('7#9')).toEqual([0, 4, 7, 10, 15])
+    expect(chordIntervals('13')).toEqual([0, 4, 7, 10, 14, 21])
+    expect(chordIntervals('maj7#11')).toEqual([0, 4, 7, 11, 18])
+    expect(chordIntervals('7sus4')).toEqual([0, 5, 7, 10])
+    expect(chordIntervals('5')).toEqual([0, 7])
   })
 })
 
