@@ -324,6 +324,7 @@ export function createMbusClient(options: MbusClientOptions = {}): MbusClient {
     let opened = false
 
     socket.onopen = () => {
+      if (socket !== ws) return // superseded by a newer connect() before opening
       opened = true
       attempted = 0
       send(outbound.hello())
@@ -341,11 +342,17 @@ export function createMbusClient(options: MbusClientOptions = {}): MbusClient {
     }
 
     socket.onmessage = (e) => {
+      if (socket !== ws) return // frame from a superseded socket
       const msg = parseServerMessage(e.data)
       if (msg) handleServerMessage(msg)
     }
 
     socket.onclose = () => {
+      // A rapid disconnect()→connect() (or a URL sweep) can leave this socket
+      // superseded; its late close event must not null the current ws, clear
+      // the shared helloTimer, drop the new peer connections, or scheduleRetry
+      // a duplicate socket. Only the socket still owned by `ws` may do that.
+      if (socket !== ws) return
       ws = null
       if (helloTimer) {
         clearTimeout(helloTimer)
@@ -358,6 +365,7 @@ export function createMbusClient(options: MbusClientOptions = {}): MbusClient {
     }
 
     socket.onerror = () => {
+      if (socket !== ws) return // superseded socket; leave the current one alone
       try {
         socket.close()
       } catch {
@@ -425,7 +433,13 @@ export function createMbusClient(options: MbusClientOptions = {}): MbusClient {
       }
       case 'error':
         // Advisory (see protocol.md); flows that depend on a reply already
-        // handle its absence, so errors are informational here.
+        // handle its absence, so errors are mostly informational here. The one
+        // exception is a rejected announce: the announced-ack queue is a blind
+        // FIFO, and the bridge replies to announces in order, so a failed
+        // announce (re: "mbus/announce", e.g. bad-name) must still consume the
+        // head entry — otherwise every later mbus/announced would shift the
+        // wrong publication and mis-assign its sourceId.
+        if (msg.re === 'mbus/announce') announceQueue.shift()
         break
     }
   }

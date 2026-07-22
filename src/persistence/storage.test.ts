@@ -183,6 +183,44 @@ describe('last-session autosave', () => {
   })
 })
 
+describe('explicit save surfaces storage failures (quota / private mode)', () => {
+  it('saveScene returns false when the write throws', () => {
+    // A storage that reads fine but rejects writes, mimicking a full quota.
+    class QuotaStorage extends MemoryStorage {
+      setItem(): void {
+        throw new Error('QuotaExceededError')
+      }
+    }
+    ;(globalThis as { localStorage: Storage }).localStorage =
+      new QuotaStorage() as unknown as Storage
+    expect(saveScene('x', createDefaultScene())).toBe(false)
+  })
+
+  it('saveScene returns true on a successful write', () => {
+    expect(saveScene('ok', createDefaultScene())).toBe(true)
+  })
+})
+
+describe('future-version blobs are refused, not lossily downgraded', () => {
+  it('skips a saved scene written by a newer app version', () => {
+    const mem = globalThis.localStorage as unknown as MemoryStorage
+    mem.__setRaw(
+      STORAGE_KEY,
+      JSON.stringify([
+        { name: 'future', scene: { version: SCENE_VERSION + 1, bpm: 120 }, savedAt: 9 },
+      ]),
+    )
+    expect(listScenes()).toEqual([])
+    expect(loadScene('future')).toBeNull()
+  })
+
+  it('ignores a future-version autosave rather than downgrading it', () => {
+    const mem = globalThis.localStorage as unknown as MemoryStorage
+    mem.__setRaw(AUTOSAVE_KEY, JSON.stringify({ savedAt: 3, scene: { version: SCENE_VERSION + 1 } }))
+    expect(loadAutosavedScene()).toBeNull()
+  })
+})
+
 describe('JSON export / import', () => {
   it('is pretty (multi-line) and round-trips', () => {
     const scene = createDefaultScene()

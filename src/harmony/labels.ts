@@ -88,6 +88,14 @@ function romanBase(
   // Choose the degree whose diatonic semitone is one step below (♯) or above
   // (♭) the chord root. Prefer flat spelling (more common: ♭II, ♭III, ♭VI, ♭VII).
   const MAJOR = [0, 2, 4, 5, 7, 9, 11]
+  // The tritone above the tonic (interval 6) is conventionally the raised
+  // subdominant (♯iv°), not ♭v — take the sharp spelling for this one degree
+  // before the general flat-first rule below claims it as ♭V.
+  if (interval === 6) {
+    for (let d = 0; d < 7; d++) {
+      if (mod12(MAJOR[d] + 1) === interval) return { numeralIdx: d, accidental: '♯' }
+    }
+  }
   for (let d = 0; d < 7; d++) {
     if (mod12(MAJOR[d] - 1) === interval) return { numeralIdx: d, accidental: '♭' }
   }

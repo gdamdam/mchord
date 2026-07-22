@@ -15,8 +15,6 @@ const NOTE_OFF_STATUS = 0x80
 export const CLOCK = 0xf8
 /** System real-time: start transport. */
 export const START = 0xfa
-/** System real-time: continue transport. */
-export const CONTINUE = 0xfb
 /** System real-time: stop transport. */
 export const STOP = 0xfc
 

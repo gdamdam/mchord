@@ -9,6 +9,7 @@
  * fan-out of agents; the shapes and the instantiate helper live here.
  */
 import type { Chord, ChordFamily, Mode, PitchClass } from '../types'
+import { mod12 } from './scales'
 
 /** Melodic genres, matching mpump's `s1.genres`. */
 export const GENRES = [
@@ -84,7 +85,7 @@ export function instantiateProgression(
   keyRoot: PitchClass,
 ): (Chord | null)[] {
   return preset.chords.map((c) =>
-    c ? { root: (((keyRoot + c.offset) % 12) + 12) % 12, family: c.family } : null,
+    c ? { root: mod12(keyRoot + c.offset), family: c.family } : null,
   )
 }
 

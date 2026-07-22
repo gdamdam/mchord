@@ -93,6 +93,22 @@ describe('slotOrderIndex — directions', () => {
       expect(slotOrderIndex(5, 1, d, 3)).toBe(0)
     }
   })
+
+  it('random order is deterministic and cache-consistent under out-of-order, large-n access', () => {
+    // Guards the incremental RNG-cursor cache (A3): out-of-order and repeated
+    // queries must match a single from-scratch forward walk, for the same seed.
+    const N = 600
+    const forward = Array.from({ length: N }, (_, n) => slotOrderIndex(n, 5, 'random', 321))
+    const reverse: number[] = []
+    for (let n = N - 1; n >= 0; n--) reverse[n] = slotOrderIndex(n, 5, 'random', 321)
+    expect(reverse).toEqual(forward)
+    // No immediate repeats across the whole (long) sequence.
+    for (let i = 1; i < N; i++) expect(forward[i]).not.toBe(forward[i - 1])
+    // A different seed yields a different sequence.
+    expect(Array.from({ length: 10 }, (_, n) => slotOrderIndex(n, 5, 'random', 322))).not.toEqual(
+      forward.slice(0, 10),
+    )
+  })
 })
 
 describe('planWindow — forward correction (no catch-up)', () => {

@@ -13,7 +13,6 @@ export {
   clamp,
   clamp01,
   dbToGain,
-  gainToDb,
   midiToFreq,
   velocityToGain,
   sanitizeADSR,

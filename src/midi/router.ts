@@ -78,6 +78,14 @@ export class MidiOutput implements NoteSink {
   setPort(port: MidiOutputPort | null): void {
     if (port === this.port) return
     this.flushHeld() // release everything sounding on the current port first
+    // If the clock was running to the old device, STOP it there and reset the
+    // running flag. Otherwise the new device would receive bare 0xF8 ticks with
+    // no START (its transport never begins) while the old device free-runs off
+    // our last START. Resetting makes the next tick re-send START to the new one.
+    if (this.clockRunning) {
+      this.port?.send([STOP])
+      this.clockRunning = false
+    }
     this.port = port
   }
 
@@ -326,7 +334,15 @@ export class MidiRouter {
       if (i.state === undefined || i.state === 'connected') presentInputs.add(i.id)
     })
     for (const id of [...this.inputHandlers.keys()]) {
-      if (!presentInputs.has(id)) this.inputHandlers.delete(id)
+      if (!presentInputs.has(id)) {
+        // Null the port's own handler before forgetting it. detachInputs only
+        // clears ports we still track, so without this a device that is
+        // unplugged and later replugged keeps our stale handler attached and
+        // would keep triggering slots even after the user selected another input.
+        const stale = this.access.inputs.get(id)
+        if (stale) stale.onmidimessage = null
+        this.inputHandlers.delete(id)
+      }
     }
 
     // If the selected output vanished, release its notes (flush) and unbind.

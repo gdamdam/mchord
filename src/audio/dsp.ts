@@ -32,11 +32,6 @@ export function dbToGain(db: number): number {
   return db <= -Infinity ? 0 : Math.pow(10, db / 20)
 }
 
-/** Linear amplitude → decibels. 0 (or negative) → -Infinity. */
-export function gainToDb(gain: number): number {
-  return gain <= 0 ? -Infinity : 20 * Math.log10(gain)
-}
-
 /** MIDI note number → frequency in Hz (A4 = 69 = 440 Hz, equal temperament). */
 export function midiToFreq(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12)
@@ -79,14 +74,4 @@ export function sanitizeADSR(env: ADSR): ADSR {
     sustain: clamp01(env.sustain),
     release: clamp(env.release, MIN_ENV_TIME, 12),
   }
-}
-
-/**
- * Convert a desired "reach ~99% in `seconds`" exponential approach into the
- * `timeConstant` argument that `AudioParam.setTargetAtTime` expects. setTarget
- * reaches ~63% in one time-constant and ~95% in three, so we use seconds/4.6
- * (≈ ln(100)) to approximate full settling within `seconds`.
- */
-export function timeConstantFor(seconds: number): number {
-  return Math.max(MIN_ENV_TIME, seconds) / 4.6
 }

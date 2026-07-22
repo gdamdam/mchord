@@ -31,7 +31,7 @@ import {
   type SceneState,
   type Slot,
 } from '../types'
-import { sanitizeScene } from '../persistence/scene'
+import { isRecord, sanitizeScene } from '../persistence/scene'
 
 /** Stable URL-fragment param key: `…#s=<payload>`. */
 const FRAGMENT_KEY = 's'
@@ -131,13 +131,17 @@ function decodeAnchor(ta: unknown): unknown {
   return undefined
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** Build a loose SceneState-shaped object from a compact payload for sanitising. */
-function fromCompact(raw: unknown): Record<string, unknown> {
-  if (!isRecord(raw)) return {}
+/**
+ * Build a loose SceneState-shaped object from a compact payload for sanitising,
+ * or null if the payload is unusable. A `v` higher than COMPACT_VERSION comes
+ * from a newer codec whose fields we can't interpret, so we refuse it rather
+ * than silently mis-decoding. Known/equal/lower versions (v1–v4) are
+ * forward-compatible by construction and decode here; a missing/non-numeric `v`
+ * is treated as legacy and allowed through.
+ */
+function fromCompact(raw: unknown): Record<string, unknown> | null {
+  if (!isRecord(raw)) return null
+  if (typeof raw.v === 'number' && raw.v > COMPACT_VERSION) return null
   const lookup = <T>(arr: readonly T[], idx: unknown): T | undefined =>
     typeof idx === 'number' ? arr[idx] : undefined
 
@@ -169,8 +173,14 @@ function fromCompact(raw: unknown): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 function utf8ToBase64(str: string): string {
-  // encodeURIComponent → %XX escapes → unescape gives a Latin-1 string btoa accepts.
-  const b64 = btoa(unescape(encodeURIComponent(str)))
+  // UTF-8 encode, then map each byte to a Latin-1 char btoa accepts. This yields
+  // byte-identical base64 to the old encodeURIComponent/unescape trick (both
+  // feed btoa the same UTF-8 byte stream), so previously shared links are
+  // unaffected — but it uses only non-deprecated APIs (escape/unescape are gone).
+  const bytes = new TextEncoder().encode(str)
+  let bin = ''
+  for (const byte of bytes) bin += String.fromCharCode(byte)
+  const b64 = btoa(bin)
   // URL-safe alphabet: +/ → -_ and drop '=' padding. Standard base64 rides in a
   // URL fragment fine per spec, but real-world linkifiers (chat, email) turn '+'
   // into a space and can choke on '/', silently corrupting a shared link.
@@ -183,7 +193,9 @@ function base64ToUtf8(b64: string): string {
   let s = b64.replace(/-/g, '+').replace(/_/g, '/')
   const pad = s.length % 4
   if (pad > 0) s += '='.repeat(4 - pad)
-  return decodeURIComponent(escape(atob(s)))
+  const bin = atob(s)
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0))
+  return new TextDecoder().decode(bytes)
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +229,9 @@ export function decodeScene(str: string): SceneState | null {
     return null
   }
   if (!isRecord(parsed)) return null
-  return sanitizeScene(fromCompact(parsed))
+  const loose = fromCompact(parsed)
+  if (loose === null) return null
+  return sanitizeScene(loose)
 }
 
 /** Build a full share URL with the scene in a `#s=` fragment. */

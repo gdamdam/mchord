@@ -31,6 +31,13 @@ describe('noteNameInKey', () => {
     // E minor (relative G major) → F♯
     expect(noteNameInKey(6, 4, 'natural-minor')).toBe('F♯')
   })
+
+  it('6+-accidental keys reach C♭/E♯ enharmonics (D4)', () => {
+    // G♭ major (6 flats): pc11 is the 4th degree C♭, not the natural B.
+    expect(noteNameInKey(11, 6, 'major')).toBe('C♭')
+    // A sharp key still spells its 6/pc as F♯ (sharp side unaffected).
+    expect(noteNameInKey(6, 11, 'major')).toBe('F♯')
+  })
 })
 
 describe('spellChord (stacked thirds)', () => {
@@ -91,6 +98,23 @@ describe('spellChord (stacked thirds)', () => {
     expect(s[1]).toBe('A')
     // augmented fifth above F is C♯ enharmonically; letter must be C
     expect(s[2][0]).toBe('C')
+  })
+
+  it('G♭ major IV chord spells C♭ E♭ G♭, not B D♯ F♯ (D4)', () => {
+    expect(spellChord({ root: 11, family: 'maj' }, 6, 'major')).toEqual([
+      'C♭',
+      'E♭',
+      'G♭',
+    ])
+  })
+
+  it('F♯ major triad keeps sharp spelling in a sharp key (D4)', () => {
+    // In B major, F♯ major (the V) reads F♯ A♯ C♯.
+    expect(spellChord({ root: 6, family: 'maj' }, 11, 'major')).toEqual([
+      'F♯',
+      'A♯',
+      'C♯',
+    ])
   })
 })
 

@@ -5,6 +5,59 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] — 2026-07-22
+
+### Added
+
+- **Link, Share, and Advanced moved into the header.** The Enable Link toggle
+  and the "Copy share link" button now live in the top bar, and a new
+  **⚙ Advanced** button opens the backup/reset/panic controls in a modal. The
+  old page-level "Advanced" disclosure section is gone.
+
+### Fixed
+
+- **Hung notes after a main-thread stall.** When a scheduler tick is delayed
+  longer than the lookahead (e.g. a backgrounded tab throttling timers), note-off
+  events stranded in the skipped window are now released instead of lost.
+- **Hung notes when editing during playback.** Changing steps, motion,
+  direction, or loop length — and applying queued jumps — now flushes sounding
+  voices, matching the existing play-style behaviour, so held notes cannot lose
+  their release events.
+- **MIDI clock lifecycle.** Swapping or disconnecting the MIDI output now sends
+  STOP to the old device and re-STARTs the new one; the clock is drift-corrected
+  against the audio clock and paused while the tab is hidden, instead of
+  emitting a garbled ~2.5 BPM stream.
+- **Zombie MIDI input after replug.** A disconnected input's message handler is
+  detached, so replugging a device no longer triggers slots behind the current
+  selection.
+- **Keyboard shortcuts no longer fire from menus and dropdowns.** Activating a
+  select option or a `<summary>` menu with the keyboard no longer also opens the
+  chord palette or toggles playback; menu navigation works for keyboard-only
+  users.
+- **Instrument could get permanently stuck if audio start-up failed once.** A
+  transient `AudioContext` start failure is no longer cached forever.
+- **Audio hardening.** No crash when a note arrives before the voice pool is
+  built (autoplay-blocked resume); notes are dropped rather than stacked while
+  the context is suspended; live filter-cutoff changes no longer fight a note's
+  in-flight envelope.
+- **Voice-leading range.** Bass-mode voicings now respect the low range limit
+  and no longer stack duplicate notes at the top of the range.
+- **Enharmonic spelling in remote keys.** Chords in six-or-more-accidental keys
+  (e.g. G♭ major) now spell correctly (C♭ E♭ G♭, not B D♯ F♯); the tritone-above
+  degree is labelled ♯iv° rather than ♭v°.
+- **Progression generation.** Borrowed/secondary chords sharing a diatonic root
+  are no longer wrongly substituted when varying a progression; two-chord
+  progressions start on the tonic.
+- **Sharing & persistence robustness.** Share links from a newer app version are
+  rejected instead of silently mis-decoded; scenes from a newer version are no
+  longer lossily downgraded and re-saved; explicit Save reports success/failure;
+  over-long tuning names from untrusted links are clamped.
+- **Reconnect races in the mbus and Link bridges** no longer let a stale
+  WebSocket close tear down a fresh connection or spawn duplicate sockets; the
+  Link-bridge auto-detect now sweeps its full URL list.
+- **Service worker** precaches the app shell with `no-store` and bounds its
+  navigation cache, avoiding a stale offline `index.html`.
+
 ## [1.5.2] — 2026-07-21
 
 ### Fixed

@@ -20,7 +20,7 @@ import type {
 } from '../types'
 import { secondsPerBar, secondsPerBeat, swungBeatTime } from './clock'
 import { playStyleEvents } from './playStyles'
-import { makeRng } from './rng'
+import { makeRng, type Rng } from './rng'
 
 /** A fully-resolved note with absolute on/off ctx times. */
 export interface ScheduledNote {
@@ -57,6 +57,36 @@ export interface PlanState {
 }
 
 /**
+ * Cache of the deterministic 'random' slot order, keyed by `seed:count:first`
+ * (`first` = -1 for the plain sequence, else a forced first slot after a jump).
+ *
+ * Recomputing the order by replaying the RNG from the seed is O(n) per query.
+ * Because the played-slot ordinal `n` grows without bound over a session and is
+ * queried once per elapsed slot on every 25ms lookahead tick, that turned each
+ * tick into O(n²). We instead keep an RNG cursor and extend a stored sequence on
+ * demand, so any index is amortised O(1) while remaining fully deterministic
+ * for a given seed (entries are only ever appended, never mutated in place).
+ */
+const randomOrderCache = new Map<string, { seq: number[]; rng: Rng; prev: number }>()
+
+function randomOrderAt(n: number, count: number, seed: number, first = -1): number {
+  if (count <= 1) return 0
+  const key = `${seed}:${count}:${first}`
+  let entry = randomOrderCache.get(key)
+  if (!entry) {
+    entry = { seq: [], rng: makeRng(seed), prev: first }
+    randomOrderCache.set(key, entry)
+  }
+  while (entry.seq.length <= n) {
+    let pick = entry.rng.int(count)
+    if (pick === entry.prev) pick = (pick + 1 + entry.rng.int(count - 1)) % count
+    entry.seq.push(pick)
+    entry.prev = pick
+  }
+  return entry.seq[n]
+}
+
+/**
  * Resolve the order in which step indices are visited for a given direction.
  * Returns the index of the `n`-th played slot (0-based n). For 'random' we use
  * a seeded RNG advanced deterministically per played slot so the same seed +
@@ -81,35 +111,16 @@ export function slotOrderIndex(
       const p = n % period
       return p < count ? p : period - p
     }
-    case 'random': {
-      // Advance an RNG deterministically; avoid repeating the previous index.
-      const rng = makeRng(seed)
-      let prev = -1
-      let idx = 0
-      for (let i = 0; i <= n; i++) {
-        let pick = rng.int(count)
-        if (pick === prev) pick = (pick + 1 + rng.int(count - 1)) % count
-        idx = pick
-        prev = pick
-      }
-      return idx
-    }
+    case 'random':
+      // Deterministic seeded order via a cached incremental RNG cursor.
+      return randomOrderAt(n, count, seed)
   }
 }
 
 /** Resolve random order after a forced first slot, preserving no-repeat behavior. */
 function randomIndexAfterFirst(n: number, count: number, seed: number, first: number): number {
-  if (count <= 1) return 0
-  const rng = makeRng(seed)
-  let prev = first
-  let idx = first
-  for (let i = 0; i <= n; i++) {
-    let pick = rng.int(count)
-    if (pick === prev) pick = (pick + 1 + rng.int(count - 1)) % count
-    idx = pick
-    prev = pick
-  }
-  return idx
+  // Same cached incremental cursor, seeded to continue from a forced first slot.
+  return randomOrderAt(n, count, seed, first)
 }
 
 function stateSlotIndex(state: PlanState, n: number, count: number): number {
@@ -348,10 +359,23 @@ export class Scheduler {
     this.interval = opts.interval ?? 25
   }
 
+  /**
+   * Release everything currently sounding. Any setter that regenerates the plan
+   * must call this while playing: note-offs are re-derived from the *live* plan
+   * on every lookahead tick, so replacing the plan orphans the offs of voices
+   * dispatched under the old plan — they would hang indefinitely otherwise.
+   */
+  private flushSounding(): void {
+    if (this._playing) this.dispatch.allNotesOff()
+  }
+
   setSteps(
     steps: { voicing: Voicing | null; root?: PitchClass | null; durationBars: number }[],
     opts?: SetStepsOpts,
   ): void {
+    // Swapping the step list changes which pitches sound; flush first so voices
+    // from the previous steps get released (see flushSounding).
+    this.flushSounding()
     this.steps = steps.map((s) => ({
       voicing: s.voicing,
       root: s.root ?? null,
@@ -392,25 +416,46 @@ export class Scheduler {
 
   setRhythm(style: RhythmStyle): void {
     if (style === this.rhythm) return
-    // Releases are regenerated from the current style on every lookahead tick.
-    // Flush voices created by the previous style before replacing it, otherwise
-    // their original note-offs disappear from the plan and can hang indefinitely.
-    if (this._playing) this.dispatch.allNotesOff()
+    // Flush voices created by the previous style before replacing it (the plan's
+    // note-offs are regenerated from the current style every tick).
+    this.flushSounding()
     this.rhythm = style
   }
 
   setDirection(dir: Direction): void {
+    const changed = dir !== this.direction
     this.direction = dir
     this.randomFirstSlot = null
+    // A new order re-maps ordinals to slots, orphaning sounding voices' offs.
+    if (changed) this.flushSounding()
   }
 
   setMotion(m: number): void {
-    this.motion = Math.max(0, Math.min(1, m))
+    const v = Math.max(0, Math.min(1, m))
+    if (v === this.motion) return
+    this.motion = v
+    // Motion changes which notes a style emits, orphaning sounding voices' offs.
+    this.flushSounding()
   }
 
   /** Number of leading slots to loop. 0 (or out of range) means all slots. */
   setLoopLength(n: number): void {
-    this.loopLength = Math.max(0, Math.floor(n))
+    const v = Math.max(0, Math.floor(n))
+    if (v === this.loopLength) return
+    this.loopLength = v
+    // Changing the loop window re-maps ordinals to slots, orphaning offs.
+    this.flushSounding()
+  }
+
+  /**
+   * Beats per bar (meter). Changing this rescales bar length; flush while
+   * playing since slot boundaries — and thus pending releases — shift.
+   */
+  setBeatsPerBar(beatsPerBar: number): void {
+    const v = Math.max(1, Math.floor(beatsPerBar))
+    if (v === this.beatsPerBar) return
+    this.beatsPerBar = v
+    this.flushSounding()
   }
 
   get playing(): boolean {
@@ -533,6 +578,16 @@ export class Scheduler {
       this.pendingJump = null
     }
 
+    // Recover from a main-thread stall. If the wall clock jumped past what we
+    // had already scheduled, the window [scheduledUntil, now) was never planned.
+    // Its note-ONs are intentionally not backfilled (no catch-up), but the
+    // note-OFFs of voices already dispatched fall in that gap and would be
+    // dropped, hanging those voices. Emit the stranded releases before advancing.
+    if (now > this.scheduledUntil) {
+      const stranded = planOffWindow(this.planState(), this.scheduledUntil, now)
+      for (const note of stranded) this.dispatch.noteOff(note.midi, note.offTime)
+    }
+
     const from = Math.max(this.scheduledUntil, now)
     if (horizon > from) {
       // Resolve releases first. When a held pitch is retriggered exactly at a
@@ -558,6 +613,9 @@ export class Scheduler {
    * (ordinal 0) but seed the order so it begins at the requested index.
    */
   private applyJump(index: number, at: number): void {
+    // A jump rebases the timeline, so releases for the pre-jump voices are no
+    // longer produced by the (rebased) plan and would hang. Release them.
+    this.flushSounding()
     if (this.direction === 'random') {
       // A seeded random stream is not guaranteed to visit every slot within any
       // finite search bound. Make the requested slot an explicit new first step,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { keyToCommand, isEditableTarget, type KeyEventLike } from './keyboard'
+import { keyToCommand, isEditableTarget, isInteractiveTarget, type KeyEventLike } from './keyboard'
 
 const ev = (over: Partial<KeyEventLike>): KeyEventLike => ({
   key: '',
@@ -87,5 +87,30 @@ describe('isEditableTarget', () => {
     expect(isEditableTarget({ tagName: 'DIV', isContentEditable: true } as unknown as EventTarget)).toBe(true)
     expect(isEditableTarget({ tagName: 'DIV' } as unknown as EventTarget)).toBe(false)
     expect(isEditableTarget(null)).toBe(false)
+  })
+})
+
+describe('isInteractiveTarget', () => {
+  it('treats native and ARIA-button controls as interactive', () => {
+    for (const tag of ['BUTTON', 'A', 'SELECT', 'INPUT', 'TEXTAREA', 'SUMMARY', 'DETAILS']) {
+      expect(isInteractiveTarget({ tagName: tag } as unknown as EventTarget)).toBe(true)
+    }
+    expect(isInteractiveTarget({ tagName: 'DIV', role: 'button' } as unknown as EventTarget)).toBe(true)
+  })
+
+  it('treats the custom Select listbox/option as interactive (G1)', () => {
+    expect(isInteractiveTarget({ tagName: 'UL', role: 'listbox' } as unknown as EventTarget)).toBe(true)
+    expect(isInteractiveTarget({ tagName: 'LI', role: 'option' } as unknown as EventTarget)).toBe(true)
+  })
+
+  it('reads role via getAttribute when present', () => {
+    const el = { tagName: 'UL', getAttribute: (n: string) => (n === 'role' ? 'listbox' : null) }
+    expect(isInteractiveTarget(el as unknown as EventTarget)).toBe(true)
+  })
+
+  it('is false for plain non-interactive targets and null', () => {
+    expect(isInteractiveTarget({ tagName: 'DIV' } as unknown as EventTarget)).toBe(false)
+    expect(isInteractiveTarget({ tagName: 'SPAN', role: 'presentation' } as unknown as EventTarget)).toBe(false)
+    expect(isInteractiveTarget(null)).toBe(false)
   })
 })

@@ -23,6 +23,11 @@ describe('romanNumeral', () => {
     expect(romanNumeral({ root: 0, family: 'maj7' }, 0, 'major')).toBe('Imaj7')
   })
 
+  it('the tritone above the tonic is ♯iv°, not ♭v° (D7)', () => {
+    // F♯dim in C major is the raised subdominant, conventionally ♯iv°.
+    expect(romanNumeral({ root: 6, family: 'dim' }, 0, 'major')).toBe('♯iv°')
+  })
+
   it('chromatic roots get accidentals', () => {
     // bVII in C major = Bb major
     expect(romanNumeral({ root: 10, family: 'maj' }, 0, 'major')).toBe('♭VII')

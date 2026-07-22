@@ -41,9 +41,18 @@ import { TWELVE_TET_NAME, twelveTetTuning } from '../tuning'
 // Small coercion helpers (each total — never throws)
 // ---------------------------------------------------------------------------
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+/**
+ * Shared plain-object type guard. Exported so the other trust boundaries
+ * (storage.ts, sharing/codec.ts) reuse the one definition rather than each
+ * carrying a drifting copy.
+ */
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
+
+/** Max accepted length for a tuning display name. A share URL is untrusted, so
+ *  an unbounded name (multi-MB) could exhaust localStorage quota once saved. */
+const MAX_TUNING_NAME_LENGTH = 100
 
 /** Clamp a finite number into [min, max]; fall back to `fallback` otherwise. */
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
@@ -151,7 +160,7 @@ function sanitizeTuning(raw: unknown): SceneTuning {
   const centsOffset = co.map((c) => clampNumber(c, -1200, 1200, 0))
   const name =
     typeof record.name === 'string' && record.name.trim().length > 0
-      ? record.name
+      ? record.name.slice(0, MAX_TUNING_NAME_LENGTH)
       : TWELVE_TET_NAME
   return { name, centsOffset, anchor }
 }
@@ -241,9 +250,11 @@ const MIGRATIONS: Record<number, Migration> = {
 /**
  * Read `version`, run forward migrations up to SCENE_VERSION, then sanitise.
  * Never throws. A missing/invalid version is treated as 0 (oldest), so even
- * un-versioned legacy blobs migrate forward cleanly.
+ * un-versioned legacy blobs migrate forward cleanly. Returns null when the blob
+ * comes from a FUTURE app version (see below) — callers treat that as a load
+ * failure and leave the stored blob untouched.
  */
-export function migrateScene(raw: unknown): SceneState {
+export function migrateScene(raw: unknown): SceneState | null {
   let working: Record<string, unknown> = isRecord(raw) ? { ...raw } : {}
 
   let version =
@@ -251,6 +262,12 @@ export function migrateScene(raw: unknown): SceneState {
       ? Math.floor(working.version)
       : 0
   if (version < 0) version = 0
+
+  // Refuse to migrate a scene written by a newer app: we don't know which fields
+  // its schema added, so coercing it down to SCENE_VERSION would silently drop
+  // them — and autosave would then re-persist the lossy result, destroying the
+  // original. Surface as a load failure instead so the stored blob is preserved.
+  if (version > SCENE_VERSION) return null
 
   // Apply each step migration in turn. If a step is missing we still advance the
   // counter (treat as a no-op) so an unexpected gap can't loop forever.

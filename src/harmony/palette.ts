@@ -124,11 +124,10 @@ function chromaticChords(keyRoot: PitchClass, mode: Mode): Chord[] {
   // Secondary dominants: dominant 7th a fifth above selected diatonic targets.
   // V/V (dominant of the dominant) — root = key + 2 (a 5th above the V).
   out.push({ root: mod12(keyRoot + 2), family: 'dom7' }) // V7/V
-  // V/vi — dominant of the submediant.
-  if (pcs.length > 5) {
-    const vi = pcs[5]
-    out.push({ root: mod12(vi + 7), family: 'dom7' }) // V7/vi
-  }
+  // V/vi — dominant of the submediant. (scalePitchClasses always returns 7
+  // degrees, so pcs[5] is always present — no length guard needed.)
+  const vi = pcs[5]
+  out.push({ root: mod12(vi + 7), family: 'dom7' }) // V7/vi
   // V/ii — dominant of the supertonic.
   out.push({ root: mod12(pcs[1] + 7), family: 'dom7' }) // V7/ii
 

@@ -22,9 +22,11 @@ export interface PresetDef {
 }
 
 /**
- * All eight presets. Gains are kept conservative (<= 0.42) so that an 8-note
- * chord summed across the voice pool lands comfortably below 0 dBFS before the
- * master glue compressor and limiter — safe gain staging by construction.
+ * The built-in presets. Per-voice gains are kept conservative (<= 0.4) as a
+ * headroom guideline — not a guarantee: a full chord summed across the pool
+ * still peaks well above 0 dBFS, so the master glue compressor and limiter
+ * (MasterBus) do the actual peak control. These trims just keep the signal
+ * feeding them musical rather than slammed.
  */
 export const PRESETS: Record<PresetId, PresetDef> = {
   'warm-poly': {

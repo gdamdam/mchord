@@ -99,6 +99,87 @@ describe('Scheduler class', () => {
     s.dispose()
   })
 
+  it('flushes note-offs stranded in a main-thread stall gap (A1)', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([{ voicing: triad(60), durationBars: 1 }]) // 1 bar = 2s at 120bpm
+    s.setTempo(120)
+    s.start(0) // primes note-ons at t=0; scheduledUntil = 0.1
+    // Simulate the timer not firing for a long time, then waking with a clock
+    // that jumped past the first chord's release (offTime = 2s).
+    clock = 2.5
+    vi.advanceTimersByTime(25) // one tick: now=2.5 >> scheduledUntil (0.1)
+    // The releases at t=2 fell inside the skipped gap [0.1, 2.5) and would be
+    // dropped without the stall recovery, hanging the t=0 chord.
+    const strandedOffs = sink.offs.filter((o) => Math.abs(o.time - 2) < 1e-9)
+    expect(strandedOffs.map((o) => o.midi).sort((a, b) => a - b)).toEqual([60, 64, 67])
+    s.dispose()
+  })
+
+  it('setSteps releases sounding voices during playback (A2)', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([{ voicing: triad(60), durationBars: 1 }])
+    s.start(0)
+    expect(sink.panics).toBe(0)
+    s.setSteps([{ voicing: triad(65), durationBars: 1 }])
+    expect(sink.panics).toBe(1)
+    s.dispose()
+  })
+
+  it('setMotion / setDirection / setLoopLength flush on change but not on no-op (A2)', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([
+      { voicing: triad(60), durationBars: 1 },
+      { voicing: triad(62), durationBars: 1 },
+    ])
+    s.start(0)
+
+    s.setMotion(0.5)
+    expect(sink.panics).toBe(1)
+    s.setMotion(0.5) // no change → no flush
+    expect(sink.panics).toBe(1)
+
+    s.setDirection('reverse')
+    expect(sink.panics).toBe(2)
+    s.setDirection('reverse') // no change → no flush
+    expect(sink.panics).toBe(2)
+
+    s.setLoopLength(1)
+    expect(sink.panics).toBe(3)
+    s.setLoopLength(1) // no change → no flush
+    expect(sink.panics).toBe(3)
+    s.dispose()
+  })
+
+  it('applyJump releases pre-jump voices when a queued jump lands (A2)', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([
+      { voicing: triad(60), durationBars: 1 },
+      { voicing: triad(62), durationBars: 1 },
+      { voicing: triad(64), durationBars: 1 },
+    ])
+    s.setTempo(120)
+    s.start(0)
+    advance(0.3)
+    expect(sink.panics).toBe(0)
+    s.triggerSlot(2, 'off') // immediate jump
+    advance(0.1) // let a tick apply it
+    expect(sink.panics).toBe(1)
+    s.dispose()
+  })
+
+  it('setBeatsPerBar rescales bar length used for slot timing (A4)', () => {
+    const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
+    s.setSteps([{ voicing: triad(60), durationBars: 1 }])
+    s.setTempo(120)
+    s.setBeatsPerBar(3) // bar = 3 beats × 0.5s = 1.5s (default 4 → 2s)
+    s.start(0)
+    advance(1.6)
+    // Next loop of the single slot attacks at the bar boundary = 1.5s, not 2s.
+    expect(sink.ons.some((o) => Math.abs(o.time - 1.5) < 1e-9)).toBe(true)
+    expect(sink.ons.some((o) => Math.abs(o.time - 2) < 1e-9)).toBe(false)
+    s.dispose()
+  })
+
   it('onStep fires with the active slot index and clears unsubscribe', () => {
     const s = new Scheduler({ now, dispatch: sink, lookahead: 0.1, interval: 25 })
     s.setSteps([

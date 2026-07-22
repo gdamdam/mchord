@@ -63,6 +63,11 @@ export class Voice {
   /** Incremented on every deactivation schedule so a stale timer from a prior
    *  note can't retire a voice that has since been reused. */
   private inactiveGen = 0
+  /** ctx time at which the currently-scheduled deactivation completes, or
+   *  Infinity while a note is sounding with none scheduled. Lets the isActive
+   *  getter reconcile against the audio clock when background-tab throttling
+   *  delays the scheduleInactive timer (E5). */
+  private inactiveAt = Infinity
   private params: ResolvedVoiceParams
   /** Active 12-note microtuning as per-pitch-class cents offsets (all-zero =
    *  12-TET). Retunes the base frequency at noteOn; unset ⇒ standard tuning. */
@@ -113,6 +118,20 @@ export class Voice {
   }
 
   get isActive(): boolean {
+    // Lazily reconcile against the audio clock. Background-tab throttling can
+    // fire the scheduleInactive setTimeout long after the voice actually fell
+    // silent, leaving it flagged active and starving the pool (E5). If the
+    // scheduled deactivation time has passed and the oscillators are already
+    // gone, the voice is silent now regardless of whether the timer ran. The
+    // generation token still guards the timer path for the reuse case.
+    if (
+      this.active &&
+      this.ctx.currentTime >= this.inactiveAt &&
+      this.oscs.length === 0 &&
+      this.subOsc === null
+    ) {
+      this.active = false
+    }
     return this.active
   }
 
@@ -134,8 +153,14 @@ export class Voice {
     this.reverbSend.gain.setTargetAtTime(params.reverbSend, now, 0.05)
     if (this.active) {
       this.filter.Q.setTargetAtTime(params.filterQ, now, 0.03)
-      // Nudge the filter floor toward the new cutoff without re-triggering the
-      // envelope — keeps a sustained chord coherent across a macro sweep.
+      // Cancel the note's still-pending filter attack/decay ramps (scheduled in
+      // noteOn) before nudging: otherwise those linear ramps keep firing and drag
+      // the cutoff to the OLD preset's targets after this nudge (E3). Hold the
+      // true value at `now`, then glide to the new floor. We deliberately do NOT
+      // re-trigger the envelope (matches the documented no-retrigger intent) — a
+      // sustained voice is past its attack/decay, so there is no remaining
+      // segment to reschedule.
+      holdAt(this.filter.frequency, now)
       this.filter.frequency.setTargetAtTime(params.filterCutoff, now, 0.05)
     }
   }
@@ -163,6 +188,9 @@ export class Voice {
     this.currentMidi = midi
     this.startedAt = counter
     this.active = true
+    // No deactivation is scheduled while the note sounds; the isActive getter
+    // must not auto-retire it against a stale prior deactivation time (E5).
+    this.inactiveAt = Infinity
     this.reverbSend.gain.setValueAtTime(p.reverbSend, t)
 
     // Apply the active microtuning here — the only pitch→Hz mapping in the voice.
@@ -270,41 +298,34 @@ export class Voice {
   /** Stop and disconnect all oscillators at `when`, scheduling them for GC.
    *  Safe to call when none exist. */
   private stopOscillators(when: number): void {
-    for (const osc of this.oscs) {
-      try {
-        osc.stop(when)
-        osc.onended = () => {
-          try {
-            osc.disconnect()
-          } catch {
-            /* already gone */
-          }
-        }
-      } catch {
-        /* already stopped */
-      }
-    }
+    for (const osc of this.oscs) this.stopOsc(osc, when)
     this.oscs.length = 0
     if (this.subOsc) {
-      const sub = this.subOsc
-      try {
-        sub.stop(when)
-        sub.onended = () => {
-          try {
-            sub.disconnect()
-          } catch {
-            /* already gone */
-          }
-        }
-      } catch {
-        /* already stopped */
-      }
+      this.stopOsc(this.subOsc, when)
       this.subOsc = null
+    }
+  }
+
+  /** Stop one oscillator at `when`, disconnecting it once it ends. Safe on an
+   *  already-stopped node (both stop() and the graph teardown are wrapped). */
+  private stopOsc(osc: OscillatorNode, when: number): void {
+    try {
+      osc.stop(when)
+      osc.onended = () => {
+        try {
+          osc.disconnect()
+        } catch {
+          /* already gone */
+        }
+      }
+    } catch {
+      /* already stopped */
     }
   }
 
   private scheduleInactive(when: number): void {
     const gen = ++this.inactiveGen
+    this.inactiveAt = when
     const ms = Math.max(0, (when - this.ctx.currentTime) * 1000) + 10
     setTimeout(() => {
       // Only the latest deactivation may retire the voice. A reused voice clears

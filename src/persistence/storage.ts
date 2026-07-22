@@ -8,7 +8,7 @@
  * nothing untrusted ever reaches the rest of the app.
  */
 import { type SceneState } from '../types'
-import { migrateScene, sanitizeScene } from './scene'
+import { isRecord, migrateScene, sanitizeScene } from './scene'
 
 /** Namespaced, versioned storage key. Bump the suffix on a storage-shape change. */
 const STORAGE_KEY = 'mchord:scenes:v1'
@@ -54,19 +54,18 @@ function readRaw(): unknown {
   }
 }
 
-function writeAll(entries: SavedScene[]): void {
+/** Persist the full entry list. Returns false when storage is unavailable or
+ *  rejects the write (quota exceeded / private mode) so an explicit user Save
+ *  can surface feedback instead of appearing to succeed. */
+function writeAll(entries: SavedScene[]): boolean {
   const store = getStore()
-  if (!store) return
+  if (!store) return false
   try {
     store.setItem(STORAGE_KEY, JSON.stringify(entries))
+    return true
   } catch {
-    // Quota exceeded / private mode — silently drop. Callers treat persistence
-    // as best-effort.
+    return false
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /** Parse a single stored entry into a SavedScene, or null if unrecoverable. */
@@ -76,8 +75,11 @@ function parseEntry(raw: unknown): SavedScene | null {
   const savedAt =
     typeof raw.savedAt === 'number' && Number.isFinite(raw.savedAt) ? raw.savedAt : 0
   // Always migrate+sanitise the stored scene; a corrupt scene is still salvaged
-  // into a valid default-ish scene rather than dropping the named entry.
+  // into a valid default-ish scene rather than dropping the named entry. A
+  // future-version scene (migrateScene → null) is skipped so it is never
+  // downgraded or re-persisted lossily.
   const scene = migrateScene(raw.scene)
+  if (scene === null) return null
   return { name: raw.name, scene, savedAt }
 }
 
@@ -104,12 +106,12 @@ export function listScenes(): SavedScene[] {
 
 /**
  * Save (or overwrite, by name) a scene. The scene is sanitised before storing,
- * so the library can never contain invalid state. No-op if storage is
- * unavailable.
+ * so the library can never contain invalid state. Returns true on success,
+ * false when the name is blank or storage is unavailable / rejects the write.
  */
-export function saveScene(name: string, scene: SceneState): void {
+export function saveScene(name: string, scene: SceneState): boolean {
   const trimmed = name.trim()
-  if (trimmed.length === 0) return
+  if (trimmed.length === 0) return false
   const entries = listScenes()
   const next: SavedScene = {
     name: trimmed,
@@ -118,7 +120,7 @@ export function saveScene(name: string, scene: SceneState): void {
   }
   const without = entries.filter((e) => e.name !== trimmed)
   without.push(next)
-  writeAll(without)
+  return writeAll(without)
 }
 
 /** Load a scene by name, or null if not found / storage unavailable. */
@@ -164,7 +166,11 @@ export function loadAutosavedScene(): AutosavedScene | null {
     if (!isRecord(raw)) return null
     const savedAt =
       typeof raw.savedAt === 'number' && Number.isFinite(raw.savedAt) ? raw.savedAt : 0
-    return { scene: migrateScene(raw.scene), savedAt }
+    // A future-version autosave (migrateScene → null) is treated as no autosave
+    // so it is never downgraded and re-persisted over the original blob.
+    const scene = migrateScene(raw.scene)
+    if (scene === null) return null
+    return { scene, savedAt }
   } catch {
     return null
   }

@@ -222,3 +222,35 @@ describe('fitToRange keeps voices distinct (regression)', () => {
     }
   })
 })
+
+describe('bass mode respects the range floor (D1)', () => {
+  it('clamps the bass to minMidi (preserving the root pitch class)', () => {
+    // Previously the bass landed at 36 (below minMidi 48) and the whole
+    // voicing derived from it fell out of range: [36,43,52].
+    const v = voiceChord(
+      { root: 0, family: 'maj' },
+      { mode: 'bass', center: 50, minMidi: 48, maxMidi: 80 },
+      null,
+    )
+    expect(v).toEqual([48, 52, 55])
+    for (const n of v) {
+      expect(n).toBeGreaterThanOrEqual(48)
+      expect(n).toBeLessThanOrEqual(80)
+    }
+    expect(chordPcSet(v)).toEqual(new Set([0, 4, 7]))
+  })
+})
+
+describe('bass mode does not collapse to duplicate ceiling notes (D2)', () => {
+  it('re-spreads upper voices near maxMidi instead of stacking duplicates', () => {
+    // Previously produced [65,67,74,80,80,80] — three lost voices at the top.
+    const v = voiceChord(
+      { root: 5, family: 'maj9' },
+      { mode: 'bass', center: 76, maxMidi: 80 },
+      null,
+    )
+    expect(v).toEqual([65, 72, 76, 79, 80])
+    expect(new Set(v).size).toBe(v.length) // all voices distinct
+    for (const n of v) expect(n).toBeLessThanOrEqual(80)
+  })
+})

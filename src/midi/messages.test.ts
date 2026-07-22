@@ -1,19 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import {
-  CLOCK,
-  CONTINUE,
-  START,
-  STOP,
-  noteOffBytes,
-  noteOnBytes,
-  velocityToMidi,
-} from './messages'
+import { CLOCK, START, STOP, noteOffBytes, noteOnBytes, velocityToMidi } from './messages'
 
 describe('messages: constants', () => {
   it('uses the standard system real-time status bytes', () => {
     expect(CLOCK).toBe(0xf8)
     expect(START).toBe(0xfa)
-    expect(CONTINUE).toBe(0xfb)
     expect(STOP).toBe(0xfc)
   })
 })

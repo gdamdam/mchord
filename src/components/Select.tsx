@@ -19,11 +19,6 @@ interface SelectProps {
   onChange: (value: string) => void
 }
 
-/** Alphabetical by label, numeric-aware so "2" sorts before "10". Every
- *  dropdown is sorted this way — grouped lists are sorted within each group. */
-const byLabel = (a: SelectOption, b: SelectOption) =>
-  a.label.localeCompare(b.label, undefined, { numeric: true })
-
 /**
  * A custom, fully-styled dropdown (NOT a native <select>) so it looks identical
  * across browsers and OSes. Implements the ARIA listbox pattern: a button opens
@@ -38,14 +33,12 @@ export function Select({ label, value, options, groups, onChange }: SelectProps)
   const btnRef = useRef<HTMLButtonElement>(null)
   const id = useId()
 
-  const sortedGroups = useMemo(
-    () => groups?.map((g) => ({ label: g.label, options: [...g.options].sort(byLabel) })),
-    [groups],
-  )
-  const sortedOptions = useMemo(() => (options ? [...options].sort(byLabel) : undefined), [options])
+  // Preserve the caller's option order: callers author it deliberately (e.g.
+  // tunings put custom first and "Import .scl…" last). Alphabetical dropdowns
+  // sort at the call site. (G4 — Select used to re-sort and defeat that order.)
   const flat = useMemo<SelectOption[]>(
-    () => (sortedGroups ? sortedGroups.flatMap((g) => g.options) : (sortedOptions ?? [])),
-    [sortedGroups, sortedOptions],
+    () => (groups ? groups.flatMap((g) => g.options) : (options ?? [])),
+    [groups, options],
   )
   const currentLabel = flat.find((o) => o.value === value)?.label ?? ''
   const optId = (i: number) => `${id}-opt-${i}`
@@ -77,6 +70,14 @@ export function Select({ label, value, options, groups, onChange }: SelectProps)
   useEffect(() => {
     if (open) listRef.current?.focus()
   }, [open])
+
+  // Keep the active option visible in the scrollable list (max-height caps it),
+  // so keyboard arrowing past the fold scrolls rather than hides the cursor (G7).
+  useEffect(() => {
+    if (!open) return
+    const el = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(`${id}-opt-${active}`)}`)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [open, active, id])
 
   const onListKey = (e: KeyboardEvent<HTMLUListElement>) => {
     switch (e.key) {
@@ -168,8 +169,8 @@ export function Select({ label, value, options, groups, onChange }: SelectProps)
             aria-activedescendant={optId(active)}
             onKeyDown={onListKey}
           >
-            {sortedGroups
-              ? sortedGroups.map((g) => (
+            {groups
+              ? groups.map((g) => (
                   <li key={g.label} role="group" aria-label={g.label} className="dropdown__group">
                     <span className="dropdown__group-label" aria-hidden="true">
                       {g.label}

@@ -21,6 +21,14 @@ export function Modal({ open, onClose, title, children, size = 'dialog' }: Modal
   const titleId = useId()
   const opener = useRef<HTMLElement | null>(null)
 
+  // Ref the latest onClose so the trap effect can depend on `open` alone. App
+  // passes an inline arrow that changes every render; keying the effect on it
+  // re-ran the trap and yanked focus back to the first control (G3).
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
   useEffect(() => {
     if (!open) return
     opener.current = document.activeElement as HTMLElement | null
@@ -31,7 +39,7 @@ export function Modal({ open, onClose, title, children, size = 'dialog' }: Modal
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key !== 'Tab' || !panel) return
@@ -54,19 +62,22 @@ export function Modal({ open, onClose, title, children, size = 'dialog' }: Modal
       document.removeEventListener('keydown', onKey)
       opener.current?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
   return (
-    <div className="modal__scrim" onPointerDown={onClose}>
+    // Close on `click` (pointerdown+pointerup both on the scrim), not
+    // pointerdown: a touch drag that starts on the scrim no longer dismisses
+    // mid-gesture and lets the follow-up tap land on a slot underneath (G6).
+    <div className="modal__scrim" onClick={onClose}>
       <div
         ref={panelRef}
         className={`modal modal--${size}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="modal__head">
           <h2 id={titleId} className="modal__title">

@@ -29,6 +29,15 @@ import type { ResolvedVoiceParams } from './voiceParams'
  */
 const VOICE_POOL_SIZE = 32
 
+/**
+ * Steal lookahead, in seconds. A stolen voice's fastStop() fades its VCA over
+ * STEAL_FADE and hard-stops its old oscillators shortly after (see Voice.ts —
+ * ~0.011 s total). Starting the replacement note that far in the future lets the
+ * old oscillators stop cleanly before the new attack raises the shared gain,
+ * avoiding a steal click on the immediate-play path (E4).
+ */
+const STEAL_LOOKAHEAD = 0.012
+
 export class AudioEngine implements NoteSink {
   private ctx: AudioContext | null = null
   private bus: MasterBus | null = null
@@ -77,8 +86,9 @@ export class AudioEngine implements NoteSink {
     return this.ctx !== null && this.ctx.state === 'running'
   }
 
-  /** Create/resume the context, load the limiter worklet, build the master
-   *  chain and voice pool. Idempotent; concurrent calls share one promise. */
+  /** Create/resume the context, build the master chain (native limiter — no
+   *  worklet; see MasterBus) and voice pool. Idempotent; concurrent calls share
+   *  one promise. */
   start(): Promise<void> {
     this.startPromise ??= this.runStart().finally(() => {
       this.startPromise = null
@@ -96,25 +106,29 @@ export class AudioEngine implements NoteSink {
     const ctx = new AudioContext({ latencyHint: 'balanced' })
     this.ctx = ctx
 
+    const bus = new MasterBus(ctx)
+    this.bus = bus
+    bus.setLocalMuted(this.localMuted)
+    bus.setOutputTrim(this.masterVolume)
+
+    // Build the voice pool against the master + reverb inputs. Done BEFORE the
+    // resume() await below: an autoplay-blocked resume() can stay pending
+    // indefinitely, and noteOn must never find an empty pool (E1). The graph is
+    // fully valid while suspended — it simply produces no sound until the clock
+    // runs.
+    this.voices = []
+    for (let i = 0; i < VOICE_POOL_SIZE; i++) {
+      const voice = new Voice(ctx, this.resolved, bus.getInput(), bus.getReverbInput())
+      voice.setTuning(this.tuning)
+      this.voices.push(voice)
+    }
+
     if (ctx.state !== 'running') {
       try {
         await ctx.resume()
       } catch {
         /* will retry on user-gesture / visibility listeners */
       }
-    }
-
-    const bus = new MasterBus(ctx)
-    this.bus = bus
-    bus.setLocalMuted(this.localMuted)
-    bus.setOutputTrim(this.masterVolume)
-
-    // Build the voice pool against the master + reverb inputs.
-    this.voices = []
-    for (let i = 0; i < VOICE_POOL_SIZE; i++) {
-      const voice = new Voice(ctx, this.resolved, bus.getInput(), bus.getReverbInput())
-      voice.setTuning(this.tuning)
-      this.voices.push(voice)
     }
 
     // Auto-resume listeners for iOS interruptions / tab switches.
@@ -198,9 +212,19 @@ export class AudioEngine implements NoteSink {
   // ---------------------------------------------------------------------------
 
   noteOn(note: VoicedNote, time: number): void {
-    if (!this.ctx) return
-    const voice = this.allocateVoice(note.midi)
-    voice.noteOn(note.midi, note.velocity, time, ++this.noteCounter)
+    // Drop note-ons unless the graph is fully live: a suspended/interrupted
+    // context has a frozen clock, so notes would stack at one stale `currentTime`
+    // and burst together on resume (E2); and an autoplay-blocked start() leaves
+    // the pool empty until resume() resolves, which would crash allocateVoice on
+    // an empty pool (E1).
+    if (!this.ctx || this.ctx.state !== 'running' || this.voices.length === 0) return
+    const { voice, stole } = this.allocateVoice(note.midi)
+    // A stolen voice is mid fast-fade with its old oscillators still scheduled to
+    // stop ~STEAL_LOOKAHEAD ahead. Start the replacement only after that so those
+    // oscillators are gone before the new attack lifts the shared VCA — otherwise
+    // their hard stop clicks under audible gain (E4).
+    const t = stole ? Math.max(time, this.now() + STEAL_LOOKAHEAD) : time
+    voice.noteOn(note.midi, note.velocity, t, ++this.noteCounter)
   }
 
   noteOff(midi: Midi, time: number): void {
@@ -231,15 +255,16 @@ export class AudioEngine implements NoteSink {
   // Voice allocation
   // ---------------------------------------------------------------------------
 
-  /** Pick a free voice; if none, steal the quietest sounding one. */
-  private allocateVoice(_midi: Midi): Voice {
+  /** Pick a free voice; if none, steal the quietest sounding one. `stole` tells
+   *  noteOn to apply the steal lookahead (E4). */
+  private allocateVoice(_midi: Midi): { voice: Voice; stole: boolean } {
     // Always prefer an idle voice. Note: we deliberately do NOT hard-reuse a
     // voice already sounding the same midi — cutting its oscillators mid-cycle
     // resets their phase under audible gain and clicks. Letting the old voice
     // release naturally while a fresh voice attacks is how polysynths retrigger
     // without artefacts (the 32-voice pool gives ample room for the overlap).
     for (const v of this.voices) {
-      if (!v.isActive) return v
+      if (!v.isActive) return { voice: v, stole: false }
     }
     // No free voice. Prefer stealing a voice already in its release tail — on
     // note-off the voice clears `midi` but stays active until the tail ends, so
@@ -259,7 +284,7 @@ export class AudioEngine implements NoteSink {
     }
     const victim = target ?? this.voices[0]
     victim.fastStop(this.now())
-    return victim
+    return { voice: victim, stole: true }
   }
 
   // ---------------------------------------------------------------------------

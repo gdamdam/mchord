@@ -27,7 +27,8 @@ export type MidiEvent =
 /**
  * Decode one raw MIDI message.
  *
- * - 0xF8..0xFF (system real-time: clock/start/stop/continue) → `clock`.
+ * - 0xF8..0xFC (system real-time: clock/start/continue/stop) → `clock`.
+ * - 0xFD..0xFF (undefined / Active Sensing / Reset) → `other` (ignorable).
  * - 0xF0..0xF7 (system common / SysEx) → `other`.
  * - Note On with velocity 0 → `noteoff`.
  * - Control Change → `cc`.
@@ -45,9 +46,12 @@ export function parseMidiMessage(data: Uint8Array | number[]): MidiEvent {
   // byte (sliced payload or non-compliant driver) is not decodable.
   if ((status & 0x80) === 0) return { type: 'other' }
 
-  // System real-time (single status byte): clock & transport.
-  if (status >= 0xf8) return { type: 'clock' }
-  // Other system common / SysEx.
+  // System real-time transport (single status byte): clock/start/continue/stop.
+  // Active Sensing (0xFE) and Reset (0xFF) are NOT transport — they must not be
+  // fed to clock-following logic — so only 0xF8..0xFC map to `clock`.
+  if (status >= 0xf8 && status <= 0xfc) return { type: 'clock' }
+  // Undefined real-time (0xFD), Active Sensing (0xFE), Reset (0xFF), and other
+  // system common / SysEx (0xF0..0xF7) are all ignorable here.
   if (status >= 0xf0) return { type: 'other' }
 
   const type = status & 0xf0

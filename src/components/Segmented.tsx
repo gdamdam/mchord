@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 interface Option<T extends string> {
   value: T
   label: string
@@ -26,6 +28,9 @@ export function Segmented<T extends string>({
   onChange,
   hideLabel,
 }: SegmentedProps<T>) {
+  // Unique per instance so two Segmented groups that share a `label` don't
+  // merge into one radio group (which let a click clear the other's selection). G8
+  const groupName = useId()
   return (
     <fieldset className="segmented">
       <legend className={hideLabel ? 'sr-only' : 'segmented__legend'}>{label}</legend>
@@ -37,7 +42,7 @@ export function Segmented<T extends string>({
           >
             <input
               type="radio"
-              name={label}
+              name={groupName}
               value={opt.value}
               checked={opt.value === value}
               onChange={() => onChange(opt.value)}

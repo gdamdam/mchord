@@ -82,6 +82,58 @@ export function resolveEffectiveBpm(
   return link.connected ? link.tempo : sceneBpm
 }
 
+/**
+ * Does a bridge state message differ in a field the app actually consumes
+ * (connected/tempo/peers in the UI, playing in the transport-follow logic)?
+ * The bridge pushes continuous beat/phase at ~20Hz; those are NOT compared here
+ * so they never force a React re-render (see C7 — beat/phase are held in a ref).
+ */
+export function linkStateChanged(a: LinkState, b: LinkState): boolean {
+  return (
+    a.connected !== b.connected ||
+    a.tempo !== b.tempo ||
+    a.playing !== b.playing ||
+    a.peers !== b.peers
+  )
+}
+
+type SchedulerStep = { voicing: Voicing | null; root: number | null; durationBars: number }
+
+/** Build scheduler steps from voicings + scene slots (root/duration per slot). */
+function buildSteps(voicings: (Voicing | null)[], slots: SceneState['slots']): SchedulerStep[] {
+  return voicings.map((v, i) => ({
+    voicing: v,
+    root: slots[i]?.chord?.root ?? null,
+    durationBars: slots[i]?.durationBars ?? 1,
+  }))
+}
+
+/**
+ * Drift-corrected MIDI-clock pump. Given the current audio-clock time `now`,
+ * the time the next tick is due, and the tick period (all in seconds), return
+ * how many ticks are due now and the updated due time. Scheduling ticks against
+ * an absolute audio-clock target (rather than accumulating a fixed setInterval
+ * period) means interval jitter never compounds into tempo error (C6). A long
+ * stall (e.g. a hidden tab) is resynced to `now` instead of flooding catch-up.
+ */
+export function dueClockTicks(
+  now: number,
+  nextDue: number,
+  periodSec: number,
+): { ticks: number; nextDue: number } {
+  if (!(periodSec > 0)) return { ticks: 0, nextDue }
+  let ticks = 0
+  let due = nextDue
+  // Cap catch-up so a large gap can't emit a huge burst of ticks in one turn.
+  while (now >= due && ticks < 32) {
+    ticks++
+    due += periodSec
+  }
+  // Fell further behind than the cap: resync the schedule to the present.
+  if (now >= due) due = now + periodSec
+  return { ticks, nextDue: due }
+}
+
 function voicingOptionsFor(scene: SceneState): VoicingOptions {
   // A global octave shift moves the whole register window (anchor + bounds)
   // together — shifting only the center would just get folded back into the
@@ -109,6 +161,8 @@ export function useInstrument(scene: SceneState): Instrument {
   const [activeSlot, setActiveSlot] = useState<number | null>(null)
   const [queuedSlot, setQueuedSlot] = useState<number | null>(null)
   const [linkState, setLinkState] = useState<LinkState>(() => getLinkState())
+  // Latest full bridge state including continuous beat/phase (not in React state).
+  const linkStateRef = useRef<LinkState>(linkState)
   const [linkEnabled, setLinkEnabled] = useState(false)
   const [localMuted, setLocalMuted] = useState(false)
   const [mbusPublishing, setMbusPublishing] = useState(false)
@@ -121,6 +175,9 @@ export function useInstrument(scene: SceneState): Instrument {
   const [midiInputId, setMidiInputId] = useState<string | null>(null)
   const [midiChannel, setMidiChannel] = useState(0)
   const [midiClock, setMidiClock] = useState(false)
+  // True while the tab is hidden — stops the MIDI-clock interval (C3) so it can't
+  // free-run at a crawl after the hide-time sendClockStop().
+  const [pageHidden, setPageHidden] = useState(false)
 
   // The voiced progression. Recomputed only when the inputs that affect voicing
   // change. Components also use this to display note spellings.
@@ -154,11 +211,7 @@ export function useInstrument(scene: SceneState): Instrument {
   useEffect(() => {
     const sched = schedulerRef.current
     if (!sched) return
-    const steps = voicings.map((v, i) => ({
-      voicing: v,
-      root: scene.slots[i]?.chord?.root ?? null,
-      durationBars: scene.slots[i]?.durationBars ?? 1,
-    }))
+    const steps = buildSteps(voicings, scene.slots)
     // Note-offs are keyed by midi and derived from the *current* steps, so when
     // the voicing changes mid-play (e.g. a key or octave shift) the sounding
     // pitches disappear from the step list and never get a matching noteOff —
@@ -209,8 +262,15 @@ export function useInstrument(scene: SceneState): Instrument {
 
   // --- Link ---
 
+  // The bridge pushes state at ~20Hz (continuous beat/phase). Committing every
+  // message re-rendered the whole App at message rate (C7). Keep the latest full
+  // state in a ref (so any beat/phase reader can reach it) but only push to React
+  // state when a field the UI/transport logic consumes actually changes.
   useEffect(() => {
-    const unsub = onLinkState((s) => setLinkState(s))
+    const unsub = onLinkState((s) => {
+      linkStateRef.current = s
+      setLinkState((prev) => (linkStateChanged(prev, s) ? s : prev))
+    })
     autoDetectLink()
     return unsub
   }, [])
@@ -263,15 +323,23 @@ export function useInstrument(scene: SceneState): Instrument {
   // --- MIDI clock out (24 PPQN) while playing ---
   // The first tick auto-sends START; STOP is sent explicitly on stop/panic/hide.
   // Tempo changes only re-create the interval (START is not re-sent), so a synced
-  // device follows the new tempo without restarting its transport.
+  // device follows the new tempo without restarting its transport. Ticks are
+  // scheduled against the audio clock so setInterval jitter doesn't accumulate
+  // into tempo drift (C6); the interval is skipped while hidden (C3) and, on
+  // re-show, the first tick re-sends START (clockRunning was reset on hide).
   useEffect(() => {
-    if (!started || !playing || !midiClock) return
+    if (!started || !playing || !midiClock || pageHidden) return
     const router = midiRef.current
     if (!router) return
-    const periodMs = 60000 / effectiveBpm / 24
-    const id = setInterval(() => router.output.sendClockTick(), periodMs)
+    const periodSec = 60 / effectiveBpm / 24
+    let nextDue = engine.now() + periodSec
+    const id = setInterval(() => {
+      const r = dueClockTicks(engine.now(), nextDue, periodSec)
+      nextDue = r.nextDue
+      for (let i = 0; i < r.ticks; i++) router.output.sendClockTick()
+    }, periodSec * 1000)
     return () => clearInterval(id)
-  }, [started, playing, midiClock, effectiveBpm])
+  }, [started, playing, midiClock, effectiveBpm, pageHidden, engine])
 
   // --- Flush notes + stop MIDI clock on page hide so nothing hangs/free-runs ---
   useEffect(() => {
@@ -280,7 +348,10 @@ export function useInstrument(scene: SceneState): Instrument {
       midiRef.current?.output.sendClockStop()
     }
     const onVis = () => {
-      if (document.visibilityState === 'hidden') flush()
+      const hidden = document.visibilityState === 'hidden'
+      // Drive the clock-interval gate (C3): stop on hide, restart on re-show.
+      setPageHidden(hidden)
+      if (hidden) flush()
     }
     window.addEventListener('pagehide', flush)
     document.addEventListener('visibilitychange', onVis)
@@ -306,7 +377,7 @@ export function useInstrument(scene: SceneState): Instrument {
   const start = useCallback((): Promise<void> => {
     if (schedulerRef.current) return Promise.resolve()
     if (startPromiseRef.current) return startPromiseRef.current
-    startPromiseRef.current = (async () => {
+    const p = (async () => {
       await engine.start()
       if (!midiRef.current) midiRef.current = new MidiRouter()
     const midiSink = new TimedMidiSink(midiRef.current.output, () => engine.now())
@@ -326,25 +397,33 @@ export function useInstrument(scene: SceneState): Instrument {
     sched.setDirection(s.direction)
     sched.setMotion(s.macros.motion)
     sched.setLoopLength(s.loopLength)
-    sched.setSteps(
-      voicingsRef.current.map((v, i) => ({
-        voicing: v,
-        root: s.slots[i]?.chord?.root ?? null,
-        durationBars: s.slots[i]?.durationBars ?? 1,
-      })),
-      { seed: s.seed },
-    )
+    sched.setSteps(buildSteps(voicingsRef.current, s.slots), { seed: s.seed })
     schedulerRef.current = sched
     engine.setPreset(s.preset)
     engine.setMacros(s.macros)
     engine.setTuning(resolveCentsOffset(s.tuning, s.keyRoot))
     setStarted(true)
     })()
-    return startPromiseRef.current
+    // A transient engine.start() failure must not poison the instrument forever:
+    // clear the cached promise on rejection so the next gesture retries instead
+    // of re-returning the settled rejection (C4). Callers still see the rejection
+    // on the returned promise; this side-channel only resets the cache.
+    p.catch(() => {
+      if (startPromiseRef.current === p) startPromiseRef.current = null
+    })
+    startPromiseRef.current = p
+    return p
   }, [engine])
 
   const togglePlay = useCallback(async () => {
-    await start()
+    try {
+      await start()
+    } catch (err) {
+      // togglePlay is fired as a `() => void` click handler, so a start()
+      // rejection would otherwise become an unhandled promise rejection (C4).
+      console.error('mchord: audio start failed', err)
+      return
+    }
     const sched = schedulerRef.current
     if (!sched) return
     if (sched.playing) {
@@ -410,7 +489,8 @@ export function useInstrument(scene: SceneState): Instrument {
       }
       }
       if (schedulerRef.current) run()
-      else void start().then(run)
+      // Surface a start() rejection instead of leaving it floating (C4).
+      else void start().then(run).catch((err) => console.error('mchord: audio start failed', err))
     },
     [start, engine, linkState.connected, linkState.tempo],
   )
@@ -464,19 +544,38 @@ export function useInstrument(scene: SceneState): Instrument {
     setMidiOutputs(router.getOutputs())
   }, [])
 
-  const midiEnable = useCallback(async () => {
-    if (!midiRef.current) midiRef.current = new MidiRouter()
-    const router = midiRef.current
-    const ok = await router.init()
-    setMidiReady(ok)
-    if (!ok) return
-    refreshMidiPorts()
-    router.onPortsChanged(refreshMidiPorts)
-    router.onNote((e: MidiEvent) => {
-      if (e.type !== 'noteon') return
-      const idx = e.midi - MIDI_TRIGGER_BASE
-      if (idx >= 0 && idx < SLOT_COUNT) triggerSlotRef.current(idx)
+  // Idempotent MIDI enable (C5). Without the guards, a second call re-registered
+  // onNote/onPortsChanged (every inbound note would fire slots twice), and two
+  // rapid calls each raced their own requestMIDIAccess. midiEnabledRef gates
+  // repeat calls once listeners are attached; midiEnablePromiseRef coalesces
+  // concurrent in-flight calls onto a single init.
+  const midiEnabledRef = useRef(false)
+  const midiEnablePromiseRef = useRef<Promise<void> | null>(null)
+  const midiEnable = useCallback(async (): Promise<void> => {
+    if (midiEnabledRef.current) return
+    if (midiEnablePromiseRef.current) return midiEnablePromiseRef.current
+    const p = (async () => {
+      if (!midiRef.current) midiRef.current = new MidiRouter()
+      const router = midiRef.current
+      const ok = await router.init()
+      setMidiReady(ok)
+      if (!ok) return // leave midiEnabledRef false so a later call can retry
+      refreshMidiPorts()
+      router.onPortsChanged(refreshMidiPorts)
+      router.onNote((e: MidiEvent) => {
+        if (e.type !== 'noteon') return
+        const idx = e.midi - MIDI_TRIGGER_BASE
+        if (idx >= 0 && idx < SLOT_COUNT) triggerSlotRef.current(idx)
+      })
+      midiEnabledRef.current = true
+    })()
+    midiEnablePromiseRef.current = p
+    // Always clear the in-flight cache once settled (retry stays possible on a
+    // failed/denied init); the returned promise still rejects for the caller.
+    void p.catch(() => {}).finally(() => {
+      if (midiEnablePromiseRef.current === p) midiEnablePromiseRef.current = null
     })
+    return p
   }, [refreshMidiPorts])
 
   const midi = useMemo<MidiControls>(

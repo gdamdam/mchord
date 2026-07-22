@@ -2,7 +2,6 @@
 
 export {
   CLOCK,
-  CONTINUE,
   START,
   STOP,
   noteOffBytes,

@@ -109,18 +109,24 @@ function reduceScene(scene: SceneState, action: Action): SceneState {
     case 'setMode':
       return { ...scene, mode: action.mode }
     case 'setSlotChord': {
+      // Reject an out-of-range index: mapping it would produce a new but
+      // identical scene, defeating the `nextScene === state.scene` guard below
+      // and pushing a spurious (no-op) undo checkpoint.
+      if (action.index < 0 || action.index >= scene.slots.length) return scene
       const slots = scene.slots.map((slot, i) =>
         i === action.index ? { ...slot, chord: action.chord } : slot,
       )
       return { ...scene, slots }
     }
     case 'setSlotDuration': {
+      if (action.index < 0 || action.index >= scene.slots.length) return scene
       const slots = scene.slots.map((slot, i) =>
         i === action.index ? { ...slot, durationBars: action.duration } : slot,
       )
       return { ...scene, slots }
     }
     case 'clearSlot': {
+      if (action.index < 0 || action.index >= scene.slots.length) return scene
       const slots = scene.slots.map((slot, i) =>
         i === action.index ? { ...slot, chord: null } : slot,
       )

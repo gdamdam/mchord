@@ -172,9 +172,16 @@ body {
 }
 
 .session-menu[open] .session-menu__button,
-.session-menu__button:hover {
+.session-menu__button:hover,
+.session-menu__button.is-on {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.topbar__note {
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  color: var(--accent-3);
 }
 
 .session-menu__sheet {
@@ -1120,39 +1127,12 @@ input[type='range']:disabled {
 
 /* --------------------------------------------------------------- advanced -- */
 
-.advanced {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  padding: 4px 14px;
-}
-
-.advanced__summary {
-  cursor: pointer;
-  padding: 10px 0;
-  font-weight: 600;
-  color: var(--text-dim);
-  list-style: none;
-}
-
-.advanced__summary::-webkit-details-marker {
-  display: none;
-}
-
-.advanced__summary::before {
-  content: '▸ ';
-  color: var(--accent);
-}
-
-.advanced[open] .advanced__summary::before {
-  content: '▾ ';
-}
-
+/* Advanced now lives in a <Modal>; this grid lays out its backup/troubleshoot
+   panels. The old page-level .advanced <details> wrapper was removed. */
 .advanced__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
-  padding: 8px 0 16px;
 }
 
 .panel {

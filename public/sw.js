@@ -10,7 +10,10 @@ const SHELL_URLS = [APP_BASE, `${APP_BASE}manifest.webmanifest`, `${APP_BASE}mch
 
 async function precache() {
   const cache = await caches.open(SHELL_CACHE)
-  await cache.addAll(SHELL_URLS)
+  // Fetch the shell with no-store so a stale HTTP-cached index.html can't get
+  // precached (it would point at hashed asset URLs from an older deploy). The
+  // manifest fetch below already does this for the same reason.
+  await cache.addAll(SHELL_URLS.map((url) => new Request(url, { cache: 'no-store' })))
   // Precache the content-hashed build assets (JS/CSS/worklet) listed in the
   // generated manifest. The SW activates after the first visit's assets have
   // already loaded, so without this they would not be cached until re-requested,
@@ -74,11 +77,14 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response.ok) {
             const copy = response.clone()
-            event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy)))
+            // Store every navigation under the single APP_BASE key. Distinct
+            // navigation URLs (query strings, deep links) all serve the same
+            // shell, so keying by request would grow SHELL_CACHE without bound.
+            event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.put(APP_BASE, copy)))
           }
           return response
         })
-        .catch(() => caches.match(request).then((cached) => cached ?? caches.match(APP_BASE))),
+        .catch(() => caches.match(APP_BASE)),
     )
     return
   }

@@ -51,6 +51,32 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable === true
 }
 
+/**
+ * True when the event target is an interactive control that should handle
+ * Space/Enter/Arrows itself, so a global shortcut must NOT also fire. Covers
+ * native buttons/links/fields, ARIA `role="button"`, the custom Select's
+ * `role="listbox"`/`"option"` (G1), and `<details>`/`<summary>` menus (G2).
+ * Kept DOM-free (duck-typed on tagName + role) so the gate is unit-testable.
+ */
+export function isInteractiveTarget(target: EventTarget | null): boolean {
+  const el = target as (HTMLElement & { role?: string | null }) | null
+  const tag = el?.tagName
+  if (typeof tag !== 'string') return false
+  const role = typeof el?.getAttribute === 'function' ? el.getAttribute('role') : (el?.role ?? null)
+  return (
+    tag === 'BUTTON' ||
+    tag === 'A' ||
+    tag === 'SELECT' ||
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SUMMARY' ||
+    tag === 'DETAILS' ||
+    role === 'button' ||
+    role === 'listbox' ||
+    role === 'option'
+  )
+}
+
 export function keyToCommand(e: KeyEventLike, ctx: KeyContext): KeyCommand | null {
   // Escape always closes an open overlay, even mid-typing.
   if (e.key === 'Escape') {

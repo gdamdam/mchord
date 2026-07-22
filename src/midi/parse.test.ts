@@ -55,6 +55,12 @@ describe('parse: clock & transport', () => {
     expect(parseMidiMessage([0xfb])).toEqual({ type: 'clock' })
     expect(parseMidiMessage([0xfc])).toEqual({ type: 'clock' })
   })
+
+  it('classifies Active Sensing (0xFE) and Reset (0xFF) as ignorable, not clock', () => {
+    // These are not transport messages; routing them to clock-followers is wrong.
+    expect(parseMidiMessage([0xfe])).toEqual({ type: 'other' })
+    expect(parseMidiMessage([0xff])).toEqual({ type: 'other' })
+  })
 })
 
 describe('parse: junk tolerance', () => {

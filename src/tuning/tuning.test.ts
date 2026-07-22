@@ -10,6 +10,7 @@ import {
   zeroCents,
 } from './index'
 import { BUILTIN_PORTABLE_TUNINGS } from '../vendor/tuning-core/builtins'
+import { parseScl } from '../vendor/tuning-core/scala'
 import type { SceneTuning, TuningAnchor } from '../types'
 
 function presetByName(name: string) {
@@ -154,5 +155,19 @@ describe('resolveCentsOffset — tuning anchor', () => {
       ...[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200].map((c) => ` ${c}.0`),
     ].join('\n')
     expect(sclTextToTuning(scl)?.anchor).toEqual({ mode: 'key' })
+  })
+})
+
+describe('parseScl rejects malformed pitch tokens (D9)', () => {
+  // parseFloat/parseInt were lenient: "12x.y" → 12¢, "3/2junk" → 3/2. The
+  // header contract says malformed files throw rather than resolve to garbage.
+  it('throws on a trailing-junk cents value', () => {
+    expect(() => parseScl('t\n 1\n 12x.y\n')).toThrow()
+  })
+  it('throws on a trailing-junk ratio', () => {
+    expect(() => parseScl('t\n 1\n 3/2junk\n')).toThrow()
+  })
+  it('still accepts well-formed cents and ratios', () => {
+    expect(() => parseScl('t\n 2\n 100.0\n 2/1\n')).not.toThrow()
   })
 })

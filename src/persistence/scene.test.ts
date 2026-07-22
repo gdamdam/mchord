@@ -215,7 +215,7 @@ describe('migrateScene', () => {
       slots: [{ chord: { root: 7, family: 'min7' }, durationBars: 2 }],
       bpm: 128,
     }
-    const out = migrateScene(v0)
+    const out = migrateScene(v0)!
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.keyRoot).toBe(7)
     expect(out.mode).toBe('dorian')
@@ -224,25 +224,25 @@ describe('migrateScene', () => {
   })
 
   it('migrates a v1 scene (no loopLength) to the full 8-slot loop', () => {
-    const out = migrateScene({ version: 1, bpm: 110 })
+    const out = migrateScene({ version: 1, bpm: 110 })!
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.loopLength).toBe(SLOT_COUNT)
   })
 
   it('migrates a v2 scene (no octaveShift) to a zero shift', () => {
-    const out = migrateScene({ version: 2, bpm: 110 })
+    const out = migrateScene({ version: 2, bpm: 110 })!
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.octaveShift).toBe(0)
   })
 
   it('migrates a v3 scene (no tuning) to 12-TET, byte-identical pitch', () => {
-    const out = migrateScene({ version: 3, bpm: 110 })
+    const out = migrateScene({ version: 3, bpm: 110 })!
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.tuning.centsOffset).toEqual(new Array(12).fill(0))
   })
 
   it('migrates an explicit version 0', () => {
-    const out = migrateScene({ version: 0, bpm: 90 })
+    const out = migrateScene({ version: 0, bpm: 90 })!
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.bpm).toBe(90)
   })
@@ -255,8 +255,17 @@ describe('migrateScene', () => {
   it('never throws on garbage', () => {
     for (const bad of [null, 5, 'x', [], { version: -3 }, { version: 'NaN' }]) {
       expect(() => migrateScene(bad)).not.toThrow()
-      expectValidScene(migrateScene(bad))
+      const out = migrateScene(bad)
+      expect(out).not.toBeNull()
+      expectValidScene(out as SceneState)
     }
+  })
+
+  it('refuses to migrate a future-version scene (returns null, not a lossy downgrade)', () => {
+    expect(migrateScene({ version: SCENE_VERSION + 1, bpm: 120 })).toBeNull()
+    expect(migrateScene({ version: 999 })).toBeNull()
+    // The current version must still migrate normally.
+    expect(migrateScene({ version: SCENE_VERSION })).not.toBeNull()
   })
 })
 
@@ -293,9 +302,16 @@ describe('sanitizeScene — tuning anchor', () => {
     expect(createDefaultScene().tuning.anchor).toEqual({ mode: 'key' })
   })
 
+  it('clamps an over-long tuning name from an untrusted share URL', () => {
+    // A multi-MB name could exhaust localStorage quota once autosaved.
+    const huge = 'x'.repeat(100_000)
+    const out = sanitizeScene({ tuning: { name: huge, centsOffset: zeros() } })
+    expect(out.tuning.name.length).toBeLessThanOrEqual(100)
+  })
+
   it('migrates a v4 scene (tuning without anchor) to Fixed C — unchanged sound', () => {
     const co = new Array(12).fill(7)
-    const out = migrateScene({ version: 4, tuning: { name: 'JI', centsOffset: co } })
+    const out = migrateScene({ version: 4, tuning: { name: 'JI', centsOffset: co } })!
     expect(out.version).toBe(SCENE_VERSION)
     expect(out.tuning.anchor).toEqual({ mode: 'fixed', pc: 0 })
     expect(out.tuning.centsOffset).toEqual(co)

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { SLOT_COUNT, SLOT_DURATIONS } from '../types'
+import type { Slot } from '../types'
 import { makeRng, generateProgression, varyProgression } from './generation'
 import { scalePitchClasses } from './scales'
 
@@ -117,5 +118,29 @@ describe('varyProgression', () => {
     const base = generateProgression({ keyRoot: 0, mode: 'major', seed: 5 })
     const v = varyProgression(base, { keyRoot: 0, mode: 'major', seed: 5 })
     expect(v).toHaveLength(base.length)
+  })
+
+  it('leaves a borrowed chord sharing a diatonic root alone (D3)', () => {
+    // D7 (V7/V in C) shares the ii root (D) but is NOT diatonic ii, so it must
+    // never be substituted for F major as if it were degree 1.
+    const slots: Slot[] = [
+      { chord: { root: 0, family: 'maj' }, durationBars: 1 },
+      { chord: { root: 2, family: 'dom7' }, durationBars: 1 }, // V7/V
+      { chord: { root: 9, family: 'min' }, durationBars: 1 },
+      { chord: { root: 5, family: 'maj' }, durationBars: 1 },
+      { chord: { root: 7, family: 'maj' }, durationBars: 1 },
+      { chord: { root: 0, family: 'maj' }, durationBars: 1 },
+    ]
+    const out = varyProgression(slots, { keyRoot: 0, mode: 'major', seed: 0 })
+    expect(out[1].chord).toEqual({ root: 2, family: 'dom7' })
+  })
+})
+
+describe('generateProgression always starts on the tonic (D5)', () => {
+  it('length 2 keeps degrees[0] on the tonic (cadence fixup must not clobber it)', () => {
+    // Previously the penultimate-chord fixup overwrote index 0, so a length-2
+    // progression started on V (root 7 in C) instead of the tonic.
+    const slots = generateProgression({ keyRoot: 0, mode: 'major', seed: 0, length: 2 })
+    expect(slots[0].chord?.root).toBe(0)
   })
 })

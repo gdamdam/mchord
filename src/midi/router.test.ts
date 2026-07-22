@@ -202,6 +202,31 @@ describe('MidiOutput: MIDI clock', () => {
     out.setClockEnabled(false)
     expect(port.sent).toEqual([[START], [CLOCK], [STOP]])
   })
+
+  it('port swap while clock running STOPs the old port and re-STARTs the new (C2)', () => {
+    out.setClockEnabled(true)
+    out.sendClockTick() // START + CLOCK on the old port
+    const port2 = new FakeOutput('o2', 'Other')
+    out.setPort(port2)
+    // Old device is told to STOP so it doesn't free-run off our last START.
+    expect(port.sent).toEqual([[START], [CLOCK], [STOP]])
+    expect(port2.sent).toEqual([])
+    // Next tick re-sends START so the new device's transport begins in sync.
+    out.sendClockTick()
+    expect(port2.sent).toEqual([[START], [CLOCK]])
+  })
+
+  it('disconnect (setPort(null)) while clock running STOPs the old port (C2)', () => {
+    out.setClockEnabled(true)
+    out.sendClockTick()
+    out.setPort(null)
+    expect(port.sent).toEqual([[START], [CLOCK], [STOP]])
+    // A later device gets a fresh START on its first tick.
+    const port2 = new FakeOutput('o2', 'Other')
+    out.setPort(port2)
+    out.sendClockTick()
+    expect(port2.sent).toEqual([[START], [CLOCK]])
+  })
 })
 
 // ── MidiRouter ───────────────────────────────────────────────────────────────
@@ -349,6 +374,36 @@ describe('MidiRouter: hot-plug & disconnect', () => {
     r.onPortsChanged(cb)
     access.fireStateChange()
     expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('nulls a dropped input handler so a replugged device is not a zombie (C1)', async () => {
+    const access = new FakeAccess()
+    const a = new FakeInput('i1', 'A')
+    access.inputs.add(a)
+    installNavigator(access)
+    const r = new MidiRouter()
+    await r.init()
+    const events: { midi?: number }[] = []
+    r.onNote((e) => events.push(e as { midi?: number }))
+    r.setInput('i1') // listening to A
+    expect(a.onmidimessage).not.toBeNull()
+
+    // A is unplugged: it stays in the map but reports disconnected.
+    a.state = 'disconnected'
+    access.fireStateChange()
+    // The physical port's handler must be nulled (not just forgotten).
+    expect(a.onmidimessage).toBeNull()
+
+    // The user selects a different input, then A is replugged (reconnects).
+    const b = new FakeInput('i2', 'B')
+    access.inputs.add(b)
+    r.setInput('i2')
+    a.state = 'connected'
+    access.fireStateChange()
+
+    // A is no longer selected; a stale handler must NOT trigger slots.
+    a.emit([0x90, 60, 100])
+    expect(events.filter((e) => e.midi === 60)).toEqual([])
   })
 
   it('attaches a handler to a newly connected selected input', async () => {

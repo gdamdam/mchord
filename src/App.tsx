@@ -5,6 +5,7 @@ import { ChordPalette } from './components/ChordPalette'
 import { ChordSlots } from './components/ChordSlots'
 import { HarmonyControls } from './components/HarmonyControls'
 import { Macros } from './components/Macros'
+import { Modal } from './components/Modal'
 import { ProgressionBrowser } from './components/ProgressionBrowser'
 import { StartGate } from './components/StartGate'
 import { TopBar } from './components/TopBar'
@@ -16,23 +17,14 @@ import {
   type AutosavedScene,
 } from './persistence'
 import { sceneFromUrl } from './sharing'
-import { createInitialState, isEditableTarget, keyToCommand, sceneReducer } from './state'
+import {
+  createInitialState,
+  isEditableTarget,
+  isInteractiveTarget,
+  keyToCommand,
+  sceneReducer,
+} from './state'
 import type { Chord, MacroValues } from './types'
-
-/** Space/Enter should activate a focused control rather than firing a shortcut. */
-function isInteractive(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null
-  const tag = el?.tagName
-  if (typeof tag !== 'string') return false
-  return (
-    tag === 'BUTTON' ||
-    tag === 'A' ||
-    tag === 'SELECT' ||
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    el?.getAttribute('role') === 'button'
-  )
-}
 
 export default function App() {
   const [startup] = useState<{
@@ -59,6 +51,7 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteSlot, setPaletteSlot] = useState<number | null>(null)
   const [progressionsOpen, setProgressionsOpen] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   // Drop a share fragment after loading so a refresh doesn't clobber edits.
   useEffect(() => {
@@ -69,9 +62,9 @@ export default function App() {
 
   // Keep the latest values reachable from the one stable keydown listener.
   // Synced in an effect; the listener only reads them inside an event callback.
-  const refs = useRef({ instrument, state, paletteOpen, progressionsOpen, hasStarted })
+  const refs = useRef({ instrument, state, paletteOpen, progressionsOpen, advancedOpen, hasStarted })
   useEffect(() => {
-    refs.current = { instrument, state, paletteOpen, progressionsOpen, hasStarted }
+    refs.current = { instrument, state, paletteOpen, progressionsOpen, advancedOpen, hasStarted }
   })
 
   const openPaletteFor = (index: number) => {
@@ -87,10 +80,11 @@ export default function App() {
         state: st,
         paletteOpen: pOpen,
         progressionsOpen: prOpen,
+        advancedOpen: advOpen,
         hasStarted: ready,
       } = refs.current
       if (!ready) return
-      const overlay = pOpen || prOpen
+      const overlay = pOpen || prOpen || advOpen
       const cmd = keyToCommand(
         { key: e.key, code: e.code, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey },
         { typing: isEditableTarget(e.target), overlayOpen: overlay },
@@ -98,9 +92,13 @@ export default function App() {
       if (!cmd) return
       // While a modal is open, only let Escape (closeOverlay) through.
       if (overlay && cmd.kind !== 'closeOverlay') return
+      // A focused control (button, field, our Select's listbox, details menu)
+      // owns Space/Enter/Arrows; don't let the global shortcut also fire (G1/G2).
       if (
-        (cmd.kind === 'toggleTransport' || cmd.kind === 'openOrCommitChord') &&
-        isInteractive(e.target)
+        (cmd.kind === 'toggleTransport' ||
+          cmd.kind === 'openOrCommitChord' ||
+          cmd.kind === 'moveSelection') &&
+        isInteractiveTarget(e.target)
       ) {
         return
       }
@@ -131,6 +129,7 @@ export default function App() {
         case 'closeOverlay':
           setPaletteOpen(false)
           setProgressionsOpen(false)
+          setAdvancedOpen(false)
           break
       }
     }
@@ -187,7 +186,7 @@ export default function App() {
     <main className="app">
       <TopBar
         getLevel={instrument.getOutputLevel}
-        link={instrument.link.state}
+        link={instrument.link}
         effectiveBpm={instrument.effectiveBpm}
         scene={scene}
         currentSessionName={currentSessionName}
@@ -199,6 +198,7 @@ export default function App() {
         masterVolume={instrument.masterVolume}
         onMasterVolume={instrument.setMasterVolume}
         midi={instrument.midi}
+        onOpenAdvanced={() => setAdvancedOpen(true)}
         onLoadSession={(name, loaded) => {
           dispatch({ type: 'loadScene', scene: loaded })
           setCurrentSessionName(name)
@@ -265,15 +265,16 @@ export default function App() {
         onLoopLength={(length) => dispatch({ type: 'setLoopLength', length })}
       />
 
-      <AdvancedPanel
-        scene={scene}
-        onLoadScene={(loaded, name) => {
-          dispatch({ type: 'loadScene', scene: loaded })
-          setCurrentSessionName(name ?? null)
-        }}
-        link={instrument.link}
-        onPanic={instrument.panic}
-      />
+      <Modal open={advancedOpen} onClose={() => setAdvancedOpen(false)} title="Advanced">
+        <AdvancedPanel
+          scene={scene}
+          onLoadScene={(loaded, name) => {
+            dispatch({ type: 'loadScene', scene: loaded })
+            setCurrentSessionName(name ?? null)
+          }}
+          onPanic={instrument.panic}
+        />
+      </Modal>
 
       <ChordPalette
         open={paletteOpen}

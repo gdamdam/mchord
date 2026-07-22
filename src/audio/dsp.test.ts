@@ -5,12 +5,10 @@ import {
   lerp,
   expLerp,
   dbToGain,
-  gainToDb,
   midiToFreq,
   centsToRatio,
   velocityToGain,
   sanitizeADSR,
-  timeConstantFor,
   MIN_ENV_TIME,
   type ADSR,
 } from './dsp'
@@ -45,12 +43,7 @@ describe('lerp / expLerp', () => {
   })
 })
 
-describe('dbToGain / gainToDb', () => {
-  it('round-trips', () => {
-    for (const db of [-24, -12, -6, -3, 0, 3]) {
-      expect(gainToDb(dbToGain(db))).toBeCloseTo(db, 6)
-    }
-  })
+describe('dbToGain', () => {
   it('0 dB is unity', () => {
     expect(dbToGain(0)).toBeCloseTo(1, 6)
   })
@@ -59,8 +52,6 @@ describe('dbToGain / gainToDb', () => {
   })
   it('handles silence', () => {
     expect(dbToGain(-Infinity)).toBe(0)
-    expect(gainToDb(0)).toBe(-Infinity)
-    expect(gainToDb(-1)).toBe(-Infinity)
   })
 })
 
@@ -118,15 +109,5 @@ describe('sanitizeADSR', () => {
   it('passes through valid values', () => {
     const ok: ADSR = { attack: 0.01, decay: 0.3, sustain: 0.7, release: 0.5 }
     expect(sanitizeADSR(ok)).toEqual(ok)
-  })
-})
-
-describe('timeConstantFor', () => {
-  it('is positive and proportional', () => {
-    expect(timeConstantFor(1)).toBeGreaterThan(0)
-    expect(timeConstantFor(2)).toBeCloseTo(2 * timeConstantFor(1), 6)
-  })
-  it('floors at MIN_ENV_TIME', () => {
-    expect(timeConstantFor(0)).toBeGreaterThanOrEqual(MIN_ENV_TIME / 4.6)
   })
 })

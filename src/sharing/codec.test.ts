@@ -217,3 +217,44 @@ describe('tuning anchor in share links', () => {
     }
   })
 })
+
+describe('compact version gate (F1)', () => {
+  const rawPayload = (obj: unknown) => btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
+
+  it('rejects a payload from a newer codec (unknown-higher v)', () => {
+    expect(decodeScene(encodeScene(richScene()))).not.toBeNull()
+    // Same shape but a future format version → refuse rather than mis-decode
+    // fields we do not understand.
+    expect(decodeScene(rawPayload({ v: 999, k: 0 }))).toBeNull()
+  })
+
+  it('still decodes a legacy v1 link (no ll/tuning/anchor)', () => {
+    const back = decodeScene(rawPayload({ v: 1, k: 5, m: 0, s: [], b: 120 }))
+    expect(back).not.toBeNull()
+    expect(back?.keyRoot).toBe(5)
+  })
+
+  it('allows a payload with a missing/non-numeric v (treated as legacy)', () => {
+    expect(decodeScene(rawPayload({ k: 3 }))).not.toBeNull()
+  })
+})
+
+describe('base64 codec is escape/unescape-free but old-path compatible (F7)', () => {
+  // The OLD encoder: btoa(unescape(encodeURIComponent(...))). Fixtures built with
+  // it prove the new TextEncoder/TextDecoder path decodes historical links.
+  const oldEncode = (obj: unknown) => btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
+
+  it('decodes an old-path link carrying a Unicode tuning name', () => {
+    const name = 'ドリアン 🎹 café'
+    const payload = oldEncode({ v: 4, t: new Array(12).fill(0), tn: name, ta: -1, k: 7 })
+    const back = decodeScene(payload)
+    expect(back).not.toBeNull()
+    expect(back?.tuning.name).toBe(name)
+    expect(back?.keyRoot).toBe(7)
+  })
+
+  it('new encoder round-trips the same Unicode name', () => {
+    const scene: SceneState = { ...richScene(), tuning: { ...richScene().tuning, name: 'café 🎹 δ' } }
+    expect(decodeScene(encodeScene(scene))?.tuning.name).toBe('café 🎹 δ')
+  })
+})

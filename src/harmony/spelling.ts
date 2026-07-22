@@ -1,6 +1,6 @@
 import type { Chord, Mode, PitchClass } from '../types'
 import { chordIntervals } from './chords'
-import { mod12 } from './scales'
+import { mod12, scalePitchClasses } from './scales'
 
 /**
  * Enharmonic spelling.
@@ -66,6 +66,25 @@ function keyPrefersFlats(keyRoot: PitchClass, mode: Mode): boolean {
 }
 
 /**
+ * Letter index (0..6 into LETTERS) for the key's tonic. The tonic itself is
+ * never one of the extreme enharmonics in a representable key, so the plain
+ * natural-or-single-accidental rule is safe here (and avoids recursing into the
+ * diatonic-degree logic that depends on this result).
+ */
+function tonicLetterIndex(keyRoot: PitchClass, flats: boolean): number {
+  const p = mod12(keyRoot)
+  for (let i = 0; i < LETTERS.length; i++) {
+    if (LETTER_PC[LETTERS[i]] === p) return i
+  }
+  for (let i = 0; i < LETTERS.length; i++) {
+    // Flat key: tonic is the letter above with a flat; sharp key: below+sharp.
+    if (flats && mod12(LETTER_PC[LETTERS[i]] - 1) === p) return i
+    if (!flats && mod12(LETTER_PC[LETTERS[i]] + 1) === p) return i
+  }
+  return 0
+}
+
+/**
  * Spell a single pitch class as a note name appropriate to the key.
  * Picks the letter whose natural pc is closest, then the accidental, biased by
  * whether the key uses sharps or flats.
@@ -76,11 +95,25 @@ export function noteNameInKey(
   mode: Mode,
 ): string {
   const p = mod12(pc)
-  // Natural note: exact letter match.
+  const flats = keyPrefersFlats(keyRoot, mode)
+
+  // Diatonic pcs are spelled by the letter the key signature assigns to that
+  // scale degree (tonic letter + degree, mod 7). This is what makes
+  // 6+-accidental keys read correctly: e.g. G♭ major's 4th degree is C♭, not B.
+  // The bare exact-natural short-circuit below is only safe for pcs the key
+  // does NOT respell; using it unconditionally makes C♭/F♭/E♯/B♯ unreachable.
+  const scalePcs = scalePitchClasses(keyRoot, mode)
+  const degree = scalePcs.indexOf(p)
+  if (degree !== -1) {
+    const tonicLetterIdx = tonicLetterIndex(keyRoot, flats)
+    const letter = LETTERS[(tonicLetterIdx + degree) % 7]
+    return letter + accidental(signedOffset(LETTER_PC[letter], p))
+  }
+
+  // Natural note (non-diatonic): exact letter match.
   for (const L of LETTERS) {
     if (LETTER_PC[L] === p) return L
   }
-  const flats = keyPrefersFlats(keyRoot, mode)
   if (flats) {
     // Spell as the letter above with a flat (e.g. pc10 → B♭).
     for (const L of LETTERS) {

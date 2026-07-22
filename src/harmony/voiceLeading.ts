@@ -13,8 +13,9 @@ import { mod12 } from './scales'
  * Macro influences (all 0..1):
  *   TENSION → add upper extensions / colour tones (more notes, more bite).
  *   SPREAD  → widen the spacing between voices.
- *   COLOR   → shift which chord tone is doubled/emphasised (deterministic pick).
  * MOTION is intentionally NOT consulted here (it is a rhythm macro).
+ * (VoicingOptions.color is accepted for API compatibility but is not wired into
+ *  the engine and currently has no effect — see D6.)
  */
 
 const DEFAULT_CENTER = 60
@@ -28,7 +29,6 @@ interface Resolved {
   maxMidi: Midi
   tension: number
   spread: number
-  color: number
 }
 
 function resolveOpts(opts: VoicingOptions): Resolved {
@@ -39,7 +39,6 @@ function resolveOpts(opts: VoicingOptions): Resolved {
     maxMidi: opts.maxMidi ?? DEFAULT_MAX,
     tension: clamp01(opts.tension ?? 0),
     spread: clamp01(opts.spread ?? 0),
-    color: clamp01(opts.color ?? 0),
   }
 }
 
@@ -50,8 +49,7 @@ function clamp01(n: number): number {
 /**
  * The set of pitch classes to voice, after macro adjustment.
  * TENSION may append an upper extension (9th/13th colour) when the family does
- * not already carry it. COLOR rotates which tone is duplicated for emphasis.
- * Returned as pitch classes in stacked order (root first).
+ * not already carry it. Returned as pitch classes in stacked order (root first).
  */
 function targetPitchClasses(chord: Chord, r: Resolved): number[] {
   const base = chordIntervals(chord.family).map((iv) => mod12(chord.root + iv))
@@ -197,8 +195,8 @@ function voiceWide(chord: Chord, r: Resolved): Voicing {
  * Generate candidate voicings for the chord (different inversions / octave
  * placements / drop variants), then pick the one closest to `prev` by total
  * absolute semitone movement (greedy nearest-voice matching across differing
- * sizes), penalising voice crossing and out-of-range notes. Deterministic tie
- * break: lowest pitch-sum, then lexicographic.
+ * sizes), penalising out-of-range notes. Deterministic tie break: lowest
+ * pitch-sum, then lexicographic.
  */
 function voiceSmooth(chord: Chord, r: Resolved, prev: Voicing | null): Voicing {
   const candidates = enumerateCandidates(chord, r)
@@ -347,7 +345,12 @@ function tieBreakLess(a: Voicing, b: Voicing): boolean {
  */
 function voiceBass(chord: Chord, r: Resolved, prev: Voicing | null): Voicing {
   const bassTarget = r.center - 12
-  const bass = nearestMidiToPc(chord.root, bassTarget)
+  let bass = nearestMidiToPc(chord.root, bassTarget)
+  // The bass must respect the range floor: nearestMidiToPc can land below
+  // minMidi, so raise it by whole octaves (preserving the root pitch class)
+  // until it sits at/above minMidi. Without this the foundation — and the
+  // upper range derived from it — can fall out of the caller's range.
+  while (bass < r.minMidi) bass += 12
 
   // Upper voices = remaining chord tones, voiced smoothly above the bass.
   const upperR: Resolved = { ...r, center: r.center, minMidi: bass + 1 }
@@ -378,7 +381,10 @@ function enumerateUpper(pcs: number[], r: Resolved, bass: Midi): Voicing[] {
     for (const anchor of anchors) {
       const lowest = Math.max(bass + 1, nearestMidiToPc(rotated[0], anchor))
       const v = sortAsc(stackUp(rotated, lowest, 0))
-      const fitted = v.map((n) => Math.min(r.maxMidi, n))
+      // Use fitToRange (not a bare per-note Math.min against maxMidi): capping
+      // each note at the ceiling collapses high stacks onto duplicate MIDI
+      // notes (lost voices). fitToRange re-spreads to distinct pitches.
+      const fitted = fitToRange(v, r)
       const key = fitted.join(',')
       if (!seen.has(key)) {
         seen.add(key)

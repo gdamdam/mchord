@@ -179,4 +179,20 @@ describe('sceneReducer', () => {
     expect(nextSeed(1)).toBeGreaterThanOrEqual(0)
     expect(nextSeed(1)).toBeLessThan(2 ** 32)
   })
+
+  it('ignores out-of-range slot indices without pushing a spurious checkpoint (F5)', () => {
+    const s0 = createInitialState()
+    const badActions: Action[] = [
+      { type: 'setSlotChord', index: 99, chord: null },
+      { type: 'setSlotChord', index: -1, chord: null },
+      { type: 'setSlotDuration', index: SLOT_COUNT, duration: 2 },
+      { type: 'clearSlot', index: 999 },
+    ]
+    for (const a of badActions) {
+      const s1 = sceneReducer(s0, a)
+      // Same reference: the `nextScene === state.scene` guard suppresses history.
+      expect(s1).toBe(s0)
+      expect(s1.past).toHaveLength(0)
+    }
+  })
 })

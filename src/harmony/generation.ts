@@ -85,9 +85,11 @@ export function generateProgression(opts: {
     // Penultimate chord biases toward the dominant for a clean cadence.
     if (i === length - 1) {
       degrees.push(0) // final = tonic (cadence target)
-      // Ensure the chord before the final tonic is a dominant or vii°.
+      // Ensure the chord before the final tonic is a dominant or vii° — but
+      // never clobber index 0, or a length-2 progression would start on V and
+      // contradict the "always starts on the tonic" contract above.
       const pre = degrees[i - 1]
-      if (pre !== 4 && pre !== 6) degrees[i - 1] = 4
+      if (pre !== 4 && pre !== 6 && i - 1 !== 0) degrees[i - 1] = 4
       break
     }
     degrees.push(weightedPick(TRANSITION[from], rng))
@@ -158,7 +160,12 @@ export function varyProgression(
   }
 
   const degreeOf = (chord: Chord): number => {
-    const idx = diatonic.findIndex((d) => d.root === chord.root)
+    // Match root AND family: a borrowed/chromatic chord sharing a diatonic root
+    // (e.g. V7/V is a dom7 on the same root as the diatonic ii) is NOT that
+    // degree and must be left alone rather than substituted as if diatonic.
+    const idx = diatonic.findIndex(
+      (d) => d.root === chord.root && d.family === chord.family,
+    )
     return idx
   }
 

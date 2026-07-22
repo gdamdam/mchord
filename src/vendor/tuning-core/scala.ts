@@ -1,4 +1,4 @@
-/* @vendored from mdrone/src/tuning/scala.ts @ 1f40372
+/* @vendored from mdrone/src/tuning/scala.ts @ 08bee7c
  * AGPL-3.0-or-later, same author as mchord. Do NOT edit here — edit upstream
  * in mdrone and re-run `npm run vendored:sync`. See scripts/sync-vendored.mjs. */
 
@@ -43,13 +43,24 @@ export interface SclData {
  *  containing `.` → literal cents. */
 function pitchLineToCents(token: string): number {
   if (token.includes(".")) {
+    // Cents literal: the ENTIRE token must be a decimal number. parseFloat is
+    // lenient ("12x.y" → 12), which would silently accept malformed files that
+    // the header contract says must throw.
+    if (!/^[+-]?(\d+\.\d*|\.\d+)$/.test(token)) {
+      throw new Error(`parseScl: invalid cents value "${token}"`);
+    }
     const cents = Number.parseFloat(token);
     if (!Number.isFinite(cents)) {
       throw new Error(`parseScl: invalid cents value "${token}"`);
     }
     return cents;
   }
+  // Ratio: each side must be a bare positive integer. parseInt is lenient
+  // ("3/2junk" → 2), so validate the raw strings before converting.
   const [nRaw, dRaw] = token.split("/");
+  if (!/^\d+$/.test(nRaw) || (dRaw !== undefined && !/^\d+$/.test(dRaw))) {
+    throw new Error(`parseScl: invalid ratio "${token}"`);
+  }
   const n = Number.parseInt(nRaw, 10);
   const d = dRaw === undefined ? 1 : Number.parseInt(dRaw, 10);
   if (!Number.isFinite(n) || !Number.isFinite(d) || n <= 0 || d <= 0) {

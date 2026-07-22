@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
-import type { MidiControls } from '../app/useInstrument'
+import { useEffect, useRef, useState } from 'react'
+import type { LinkControls, MidiControls } from '../app/useInstrument'
 import { deleteScene, listScenes, loadScene, saveScene, type SavedScene } from '../persistence'
-import type { LinkState } from '../transport'
+import { sceneToShareUrl } from '../sharing'
 import type { SceneState } from '../types'
 import { Meter } from './Meter'
 import { Select } from './Select'
@@ -9,7 +9,7 @@ import { WORDMARK_ASCII } from './displayNames'
 
 interface TopBarProps {
   getLevel: () => number
-  link: LinkState
+  link: LinkControls
   effectiveBpm: number
   scene: SceneState
   currentSessionName: string | null
@@ -22,6 +22,16 @@ interface TopBarProps {
   masterVolume: number
   onMasterVolume: (volume: number) => void
   midi: MidiControls
+  onOpenAdvanced: () => void
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** Brand, live output meter, and Link status. */
@@ -40,21 +50,54 @@ export function TopBar({
   masterVolume,
   onMasterVolume,
   midi,
+  onOpenAdvanced,
 }: TopBarProps) {
   const menuRef = useRef<HTMLDetailsElement>(null)
   const midiMenuRef = useRef<HTMLDetailsElement>(null)
   const [saved, setSaved] = useState<SavedScene[]>(() => listScenes())
   const [name, setName] = useState('')
+  // One transient header note, reused for Share and Save feedback.
+  const [note, setNote] = useState('')
+  const noteTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const flashNote = (message: string) => {
+    setNote(message)
+    clearTimeout(noteTimer.current)
+    noteTimer.current = setTimeout(() => setNote(''), 3000)
+  }
 
   const refresh = () => setSaved(listScenes())
   const save = (requestedName: string) => {
     const clean = requestedName.trim()
     if (!clean) return
-    saveScene(clean, scene)
+    // saveScene returns false when browser storage is unavailable/rejects (G9).
+    const ok = saveScene(clean, scene)
+    if (!ok) {
+      flashNote('Save failed — storage unavailable')
+      return
+    }
     onSaveSession(clean)
     setName('')
     refresh()
+    flashNote(`Saved “${clean}”`)
   }
+
+  const onShare = async () => {
+    const url = sceneToShareUrl(scene, `${location.origin}${location.pathname}`)
+    const ok = await copyText(url)
+    flashNote(ok ? 'Share link copied to clipboard' : url)
+  }
+
+  // Dismiss the details menus on an outside pointer down, matching Select (G5).
+  useEffect(() => {
+    const onDoc = (e: PointerEvent) => {
+      const target = e.target as Node
+      if (!menuRef.current?.contains(target)) menuRef.current?.removeAttribute('open')
+      if (!midiMenuRef.current?.contains(target)) midiMenuRef.current?.removeAttribute('open')
+    }
+    document.addEventListener('pointerdown', onDoc)
+    return () => document.removeEventListener('pointerdown', onDoc)
+  }, [])
 
   return (
     <header className="topbar">
@@ -209,6 +252,40 @@ export function TopBar({
             )}
           </div>
         </details>
+        <button
+          type="button"
+          className={`session-menu__button${link.enabled ? ' is-on' : ''}`}
+          aria-pressed={link.enabled}
+          title={
+            link.enabled
+              ? 'Ableton Link on — needs the mpump Link Bridge to connect'
+              : 'Enable Ableton Link (needs the mpump Link Bridge; harmless without it)'
+          }
+          onClick={() => link.enable(!link.enabled)}
+        >
+          {link.enabled ? 'Link on' : 'Enable Link'}
+        </button>
+        <button
+          type="button"
+          className="session-menu__button"
+          title="Copy a link that restores this scene"
+          onClick={onShare}
+        >
+          Share
+        </button>
+        <button
+          type="button"
+          className="session-menu__button"
+          aria-label="Open advanced options"
+          onClick={onOpenAdvanced}
+        >
+          ⚙ Advanced
+        </button>
+        {note && (
+          <span className="topbar__note" role="status" aria-live="polite">
+            {note}
+          </span>
+        )}
         <label className="volume" title="Master output volume">
           <span className="sr-only">Master volume</span>
           <span className="volume__icon" aria-hidden="true">
@@ -251,16 +328,16 @@ export function TopBar({
           {mbusPublishing ? 'bus on' : 'bus'}
         </button>
         <span
-          className={`link-pill${link.connected ? ' is-on' : ''}`}
+          className={`link-pill${link.state.connected ? ' is-on' : ''}`}
           title={
-            link.connected
+            link.state.connected
               ? `Ableton Link: following ${effectiveBpm.toFixed(1)} BPM`
               : 'Ableton Link offline'
           }
         >
           <span className="link-pill__dot" aria-hidden="true" />
-          {link.connected
-            ? `Link ${effectiveBpm.toFixed(1)} · ${link.peers} peer${link.peers === 1 ? '' : 's'}`
+          {link.state.connected
+            ? `Link ${effectiveBpm.toFixed(1)} · ${link.state.peers} peer${link.state.peers === 1 ? '' : 's'}`
             : 'Link off'}
         </span>
         <Meter getLevel={getLevel} />

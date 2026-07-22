@@ -57,9 +57,14 @@ export function sanitizeLinkMessage(
   }
 }
 
-const WS_URLS = ['ws://127.0.0.1:19876', 'ws://[::1]:19876', 'ws://localhost:19876']
+// `localhost` must come first: Firefox blocks insecure ws:// to IP literals
+// (127.0.0.1, [::1]) from an HTTPS page as mixed content and only exempts the
+// `localhost` hostname (bug 1376309). Same order/reasoning as mbus/protocol.ts.
+const WS_URLS = ['ws://localhost:19876', 'ws://127.0.0.1:19876', 'ws://[::1]:19876']
 const RETRY_MS = 5000
 let wsUrlIdx = 0
+// Bounds the auto-detect URL sweep to one pass over WS_URLS (no retry loop).
+let autoAttempts = 0
 
 let ws: WebSocket | null = null
 let retryTimer: ReturnType<typeof setTimeout> | null = null
@@ -85,15 +90,24 @@ function connect(): void {
   // Guard for non-DOM environments (tests / SSR): no WebSocket → no-op.
   if (typeof WebSocket === 'undefined') return
   try {
-    ws = new WebSocket(WS_URLS[wsUrlIdx])
+    // Capture the socket locally so every handler can verify it is still the
+    // current one. A rapid enable→disable→enable (or an auto-detect URL sweep)
+    // can leave a superseded socket whose late close/error events would
+    // otherwise null the *new* ws and schedule a duplicate live connection.
+    const socket = new WebSocket(WS_URLS[wsUrlIdx])
+    ws = socket
+    let opened = false
 
-    ws.onopen = () => {
+    socket.onopen = () => {
+      if (socket !== ws) return // superseded before it opened
+      opened = true
       enabled = true
       lastState = { ...lastState, connected: true }
       notify()
     }
 
-    ws.onmessage = (e) => {
+    socket.onmessage = (e) => {
+      if (socket !== ws) return
       try {
         const msg = JSON.parse(e.data)
         if (msg.type === 'link') {
@@ -105,18 +119,28 @@ function connect(): void {
       }
     }
 
-    ws.onclose = () => {
+    socket.onclose = () => {
+      if (socket !== ws) return // stale socket; a newer one is now current
       ws = null
       if (lastState.connected) {
         lastState = { ...lastState, connected: false, peers: 0 }
         notify()
       }
-      if (enabled && !autoMode) scheduleRetry()
+      if (enabled && !autoMode) {
+        scheduleRetry()
+      } else if (autoMode && !opened && autoAttempts < WS_URLS.length - 1) {
+        // Auto-detect sweeps the whole URL list once (bounded, no retry loop).
+        // onerror already rotated wsUrlIdx, so just try the next candidate;
+        // without this the rotation was dead and only one URL was ever tried.
+        autoAttempts++
+        connect()
+      }
     }
 
-    ws.onerror = () => {
+    socket.onerror = () => {
+      if (socket !== ws) return
       wsUrlIdx = (wsUrlIdx + 1) % WS_URLS.length
-      ws?.close()
+      socket.close()
     }
   } catch {
     wsUrlIdx = (wsUrlIdx + 1) % WS_URLS.length
@@ -172,12 +196,16 @@ export function getLinkState(): LinkState {
 }
 
 /**
- * Auto-detect: try connecting once on page load. If the bridge is running,
- * stays connected. If not, silently gives up. Does not retry — use
- * enableLinkBridge(true) for a persistent connection.
+ * Auto-detect on page load: sweep the URL list once (localhost, then the IP
+ * literals) so a bridge bound to any loopback variant is found. If one
+ * connects, stays connected; if none do, silently gives up. Does not retry
+ * after the single pass — use enableLinkBridge(true) for a persistent
+ * connection.
  */
 export function autoDetectLinkBridge(): void {
   if (enabled || ws) return
   autoMode = true
+  autoAttempts = 0
+  wsUrlIdx = 0 // start the one-pass sweep at localhost (Firefox mixed-content)
   connect()
 }
