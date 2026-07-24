@@ -298,8 +298,13 @@ export default function App() {
         onClose={() => setProgressionsOpen(false)}
         keyRoot={scene.keyRoot}
         mode={scene.mode}
-        onLoad={(chords, loadedMode) =>
-          dispatch({ type: 'loadProgression', chords, mode: loadedMode })
+        onLoad={(payload) =>
+          dispatch({
+            type: 'loadProgression',
+            chords: payload.chords,
+            durations: payload.durations,
+            mode: payload.mode,
+          })
         }
       />
 

@@ -1,7 +1,7 @@
 {
   "name": "mchord",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.8.1",
   "license": "AGPL-3.0-or-later",
   "description": "Move through chords. Stay in flow. A harmony-first browser performance instrument.",
   "type": "module",
@@ -11,6 +11,7 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",
+    "catalog:audit": "MCHORD_AUDIT=1 vitest run src/harmony/catalogAudit.report.test.ts --reporter=verbose",
     "lint": "eslint .",
     "vendored:check": "node scripts/sync-vendored.mjs",
     "vendored:sync": "node scripts/sync-vendored.mjs --sync",

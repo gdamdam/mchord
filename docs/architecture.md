@@ -13,6 +13,58 @@ each chord relative to the previous one so motion between chords is smooth and
 **deterministic** (the same progression always voices the same way). This module
 is covered by unit tests (`chords.test.ts`, `scales.test.ts`, `spelling.test.ts`).
 
+## Progression catalog
+
+The chord-progression library is a **normalized catalog** (`src/harmony/catalog.ts`)
+built deterministically from a raw legacy bank:
+
+```text
+progressionData.ts (raw legacy rows)
+        │  normalizeLegacyLibrary()  — group by musical signature
+        ▼
+   base entries (one canonical entry per unique signature)
+        │  + CURATED_OVERRIDES  (reviewed metadata, honest renames)
+        │  + CURATED_ENTRIES    (coverage additions)
+        ▼
+   CATALOG  (frozen, deterministic)  ──▶ selectors ──▶ ProgressionBrowser
+```
+
+- **One canonical entry per unique musical signature.** Content that was copied
+  across genres in the legacy bank collapses into a single entry tagged with
+  several `genres`; alternate names become `aliases` (no chord data is copied).
+- **Stable ids are permanent.** An id is the slug of the canonical name, pinned by
+  a golden test (`catalog.test.ts`); a rename changes `name`, never `id`.
+- **Model vs. wiring.** Each entry is a list of `ProgEvent`s. `chord` and
+  `durationBars` are **wired end to end** (they flow through `loadProgression` into
+  slots, playback, persistence, and share links). `inversion`, `bass`, `keyCenter`,
+  `sections`, `altEndings`, and the tempo/voicing/style recommendations are
+  **catalog-only metadata** — recorded losslessly but intentionally not sent to the
+  audio/MIDI path (a boundary test in `catalog.test.ts` guards this).
+- **The audit** (`catalogAudit.ts`, run via `npm run catalog:audit`) is a pure
+  function reporting counts, unique signatures, duplicates, rotations, and
+  mode/family/rest coverage; it backs the regression tests so human-reported and
+  CI-asserted numbers can't drift.
+
+### Catalog provenance policy
+
+Provenance is typed (`Provenance`) and **never fabricated**:
+
+- Common-practice / theory patterns (ii–V–I, the Axis loop, 12-bar blues, the
+  Andalusian cadence, line clichés, doo-wop, Pachelbel) are `traditional` or
+  `internal-theory-review` with a musical rationale — they need no external
+  citation and none is claimed.
+- Entries whose legacy names implied a specific composition/artist we could not
+  verify are **renamed** to a generic functional name and marked `unverified` (or
+  `composition-reduction` when they are a harmonic outline); the evocative name is
+  kept as an alias.
+- The `textbook` / `reference-work` / `artist-material` kinds are reserved for
+  entries that carry a durable reference (URL/ISBN/title); a test rejects any such
+  kind without one, and rejects a stray URL/ISBN on the no-source kinds.
+- **Non-diatonic harmony is annotated, not rejected.** Borrowed/altered/chromatic
+  chords are expected; each such entry carries an intent tag or a `harmonicIntent`
+  note, and a test enforces that (there is no blanket "all chords must be diatonic"
+  rule).
+
 ## Audio engine
 
 `src/audio/` is the synth: `voiceParams.ts`, `presets.ts`, and `macros.ts` define
@@ -79,6 +131,10 @@ src/
   types.ts                    shared types
   harmony/                    pure theory + deterministic voice leading
     chords.ts  scales.ts  spelling.ts   (+ .test.ts beside each)
+    catalog.ts                normalized progression catalog (model + selectors)
+    catalogCurated.ts         reviewed overrides + coverage additions
+    catalogAudit.ts           deterministic catalog audit (npm run catalog:audit)
+    progressionData.ts        raw legacy bank (source for the normalizer)
   audio/                      built-in synth (singleton engine)
     AudioEngine.ts  Voice.ts  MasterBus.ts (native limiter)
     voiceParams.ts  presets.ts  macros.ts  dsp.ts

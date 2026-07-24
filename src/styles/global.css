@@ -1477,6 +1477,118 @@ input[type='range']:disabled {
   color: var(--text-dim);
 }
 
+/* controls: search + filters above the genre/list grid */
+.proglib__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.proglib__search {
+  flex: 1 1 220px;
+}
+
+.proglib__search input,
+.proglib__filter select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.proglib__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.proglib__results {
+  min-width: 0;
+}
+
+.proglib__count {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.proglib__mode,
+.proglib__len,
+.proglib__badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  vertical-align: middle;
+  background: var(--panel-raised);
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+}
+
+.proglib__len::after {
+  content: ' ch';
+  opacity: 0.6;
+}
+
+.proglib__badge--warn {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.proglib__tags {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  opacity: 0.85;
+}
+
+.proglib__details {
+  margin: 2px 0 0 2px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.proglib__details > summary {
+  cursor: pointer;
+  padding: 2px 0;
+  color: var(--text-dim);
+  font-size: 0.74rem;
+}
+
+.proglib__detailbody {
+  padding: 4px 0 8px 10px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.proglib__detailbody p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (max-width: 620px) {
   .proglib {
     grid-template-columns: 1fr;

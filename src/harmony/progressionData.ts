@@ -1,11 +1,15 @@
 /**
- * Genre chord-progression library DATA — 10 progressions per genre.
+ * Genre chord-progression library DATA (raw, legacy source).
  *
- * Genres mirror mpump's melodic-genre catalog. Compiled from web research
- * (music-theory blogs, production tutorials, genre guides) cross-checked against
- * music theory. Chords are key-agnostic: { offset (semitones above tonic 0–11),
- * family }, so a preset instantiates into any key. GENERATED — see
- * scratchpad/gen-progressions.mjs; edit progressions.ts for the shapes/helpers.
+ * Genres mirror mpump's melodic-genre catalog. Chords are key-agnostic:
+ * { offset (semitones above tonic 0–11), family }, so a preset instantiates into
+ * any key. Per-genre counts VARY (there is no fixed number per genre).
+ *
+ * PROVENANCE NOTE: these were assembled as common genre/theory patterns; no
+ * verifiable external source is recorded for individual rows. They are therefore
+ * treated by the normalized catalog as `traditional` / `unverified` pending
+ * editorial review (see catalog.ts / catalogCurated.ts). This file is hand-edited
+ * data — there is no generator script.
  */
 import type { ProgressionLibrary } from './progressions'
 

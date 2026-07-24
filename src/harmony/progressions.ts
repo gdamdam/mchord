@@ -1,12 +1,17 @@
 /**
- * Genre chord-progression library.
+ * Genre chord-progression library — LEGACY shapes + helpers.
  *
  * Genres mirror the melodic-genre list from the sibling **mpump** catalog. Each
  * progression is stored key-agnostic: chords are a semitone `offset` from the
  * tonic plus a chord family, so a preset instantiates into any key.
  *
- * The library DATA (10 progressions per genre) was researched and compiled by a
- * fan-out of agents; the shapes and the instantiate helper live here.
+ * This module is now the raw SOURCE for the normalized catalog (see `catalog.ts`):
+ * `PROGRESSION_LIBRARY` is deterministically de-duplicated into one canonical
+ * entry per unique musical signature, with cross-genre copies folded into genre
+ * tags and alternate names into aliases. The per-genre counts vary (they are NOT
+ * a fixed number per genre); the catalog audit (`catalogAudit.ts`) is the source
+ * of truth for actual counts and coverage. The shipped UI uses the catalog; these
+ * legacy exports remain for backward compatibility.
  */
 import type { Chord, ChordFamily, Mode, PitchClass } from '../types'
 import { mod12 } from './scales'
@@ -97,5 +102,6 @@ export function instantiateProgression(
   )
 }
 
-// Data is generated in progressionData.ts (10 per genre) and re-exported here.
+// Raw legacy data lives in progressionData.ts and is re-exported here; the
+// normalized, de-duplicated catalog is built from it in catalog.ts.
 export { PROGRESSION_LIBRARY } from './progressionData'

@@ -5,6 +5,59 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] — 2026-07-24
+
+### Added
+
+- **Normalized progression catalog.** The flat genre→preset bank is now a typed,
+  auditable catalog (`src/harmony/catalog.ts`). One **canonical entry per unique
+  musical signature** (246 entries), tagged to one or more genres with alternate
+  names as **aliases** instead of duplicated chord data. Each entry carries a
+  **classification**, **typed provenance**, **review status**, **completeness**,
+  harmonic-intent **tags**, and a description.
+- **Per-event durations end to end.** Catalog entries can hold a chord for longer
+  than one bar; `loadProgression` now honours per-event durations through slots,
+  playback, persistence, and share links (previously durations reset to 1 bar).
+  Rests are supported in catalog entries too.
+- **Catalog-only metadata.** `ProgEvent` also models inversion, slash bass, local
+  key centre, sections, alternate endings, and tempo/voicing/style recommendations
+  — recorded losslessly but explicitly **not** wired to the audio/MIDI path yet (a
+  boundary test guards this).
+- **Upgraded Progression browser.** Text search over name/alias, a mode filter, a
+  "reviewed only" toggle, per-item mode/length/tag chips, badges for
+  excerpts/reductions/**unverified** entries, and an expandable details view with
+  provenance. Fast genre-browse-and-load is preserved; search input, filters, and
+  details are keyboard/screen-reader accessible.
+- **Catalog audit command.** `npm run catalog:audit` prints a deterministic report
+  (counts, unique signatures, duplicates, rotations, mode/family/rest coverage,
+  provenance by kind); the same pure module backs the regression tests.
+
+### Changed
+
+- **Honest provenance.** No fabricated citations. Common theory/idiom patterns are
+  `traditional`/`internal-theory-review` with a rationale; entries whose names
+  implied a specific composition/artist we could not verify (e.g. Giant Steps,
+  Satin Doll, Creep, Skywalker) were **renamed** to generic functional names and
+  marked `unverified`/`composition-reduction`, keeping the old name as an alias.
+- **Duplicates canonicalized.** The three known same-bank duplicates (Acid-Techno
+  303 Phrygian Pedal / Squelch i-♭II, Synthwave Epic Majors / 80s Axis, Jazz
+  Rhythm Changes A / 1-6-2-5 Turnaround) and 29 cross-genre exact duplicates now
+  fold into single canonical entries with genre tags/aliases.
+- **Coverage hardened.** Added reviewed, musically-defensible entries exercising
+  previously-empty engine features: **Locrian**, **harmonic major**, **augmented**,
+  **7♯9**, extra **melodic-minor** and **maj7♯11**, and several **rest**-containing
+  patterns. Every supported mode and chord family now has at least one reviewed use.
+- **Docs/comments corrected.** Removed the stale "10 progressions per genre" claim,
+  the unverifiable "compiled from web research" note, and the reference to a missing
+  generator script; README and the catalog now agree.
+
+### Compatibility
+
+- Saved scenes and share links decode **exactly as before** — scenes store resolved
+  slots (chord + duration), not catalog references, so catalog changes don't affect
+  them. `SCENE_VERSION` and the share-codec format are **unchanged**; new per-event
+  durations ride the existing `durationBars` slot field. Round-trip tests cover it.
+
 ## [1.8.0] — 2026-07-22
 
 ### Added

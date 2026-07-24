@@ -51,3 +51,46 @@ export {
   instantiateProgression,
 } from './progressions'
 export type { Genre, ProgChord, ProgressionPreset, ProgressionLibrary } from './progressions'
+
+// Normalized progression catalog (Phase 2/3). The legacy exports above remain
+// for backward compatibility; new UI/selectors use the catalog.
+export {
+  CATALOG,
+  CLASSIFICATIONS,
+  REVIEW_STATES,
+  COMPLETENESS,
+  PROVENANCE_KINDS,
+  HARMONY_TAGS,
+  allEntries,
+  resolveById,
+  progressionsForGenre,
+  searchProgressions,
+  filterByMode,
+  filterByFamily,
+  filterByTag,
+  filterByLength,
+  filterByReview,
+  entryToLoad,
+  signatureOfEvents,
+  normalizeLegacyLibrary,
+} from './catalog'
+export type {
+  CatalogEntry,
+  CatalogOverride,
+  Classification,
+  ReviewStatus,
+  Completeness,
+  ProvenanceKind,
+  Provenance,
+  HarmonyTag,
+  ProgEvent,
+  Section,
+  LoadPayload,
+} from './catalog'
+export {
+  computeCatalogAudit,
+  formatCatalogAudit,
+  signatureOf,
+  rotationKeyOf,
+} from './catalogAudit'
+export type { AuditRow, CatalogAudit } from './catalogAudit'

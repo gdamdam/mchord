@@ -22,7 +22,7 @@ import type {
   SlotDuration,
   VoicingMode,
 } from '../types'
-import { OCTAVE_SHIFT_MAX, OCTAVE_SHIFT_MIN, SLOT_COUNT } from '../types'
+import { OCTAVE_SHIFT_MAX, OCTAVE_SHIFT_MIN, SLOT_COUNT, SLOT_DURATIONS } from '../types'
 
 /** Maximum number of undo steps kept. Bounds memory; older states are dropped. */
 export const MAX_HISTORY = 64
@@ -42,7 +42,10 @@ export type Action =
   | { type: 'setSlotDuration'; index: number; duration: SlotDuration }
   | { type: 'clearSlot'; index: number }
   | { type: 'setLoopLength'; length: number }
-  | { type: 'loadProgression'; chords: (Chord | null)[]; mode?: Mode }
+  // `durations` is optional and backward-compatible: callers that omit it (e.g.
+  // the chord-entry modal) get the historical 1-bar-per-slot behaviour, while the
+  // progression catalog passes per-event durations so they are NOT discarded.
+  | { type: 'loadProgression'; chords: (Chord | null)[]; durations?: SlotDuration[]; mode?: Mode }
   | { type: 'selectSlot'; index: number }
   | { type: 'moveSelection'; delta: number }
   | { type: 'setVoicingMode'; mode: VoicingMode }
@@ -136,11 +139,17 @@ function reduceScene(scene: SceneState, action: Action): SceneState {
       return { ...scene, loopLength: clamp(Math.round(action.length), 1, SLOT_COUNT) }
     case 'loadProgression': {
       // Fill from the top, pad to SLOT_COUNT, and size the loop to the
-      // progression. Durations reset to 1 bar; mode switches if the preset asks.
+      // progression. Per-event durations are honoured when supplied (a catalog
+      // entry can hold a chord longer); slots without a supplied duration, and
+      // padding beyond the progression, default to 1 bar. Mode switches if asked.
       const chords = action.chords.slice(0, SLOT_COUNT)
+      const durations = action.durations ?? []
       const slots: Slot[] = []
       for (let i = 0; i < SLOT_COUNT; i++) {
-        slots.push({ chord: chords[i] ?? null, durationBars: 1 })
+        const d = durations[i]
+        const durationBars: SlotDuration =
+          d !== undefined && (SLOT_DURATIONS as readonly number[]).includes(d) ? d : 1
+        slots.push({ chord: chords[i] ?? null, durationBars })
       }
       return {
         ...scene,
