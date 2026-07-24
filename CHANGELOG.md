@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.2] — 2026-07-24
+
+### Added
+
+- **Fundamentals, blues, and classic-device progressions (246 → 257).** Filled
+  the most conspicuous gaps identified by an online cross-reference against
+  canonical progression lists — the catalog had been rich in extended/jazz/modal
+  harmony but thin on elementary triadic staples:
+  - **The I–IV–V family:** `I–IV–V` (three-chord), `I–IV–V–IV` loop, `I–V–IV`
+    (rock), `IV–V–I` cadence, plus plain-triad turnarounds `I–vi–ii–V` and
+    `I–iii–vi–IV`.
+  - **Blues fundamentals:** a **minor 12-bar blues** (with the ♭VI7–V7 descent), a
+    basic **quick-change 12-bar blues**, and the blues-rock riff **I–♭III–IV**.
+  - **Classic devices:** the **Neapolitan cadence** (♭II–V–i) and an
+    **ascending-fourths cycle** (♭VI–♭III–♭VII–IV–I, "Hey Joe").
+  All are `generic-theory`/`traditional` (or `internal-theory-review`), reviewed,
+  with honest provenance and harmonic-intent tags — no fabricated citations.
+
 ## [1.8.1] — 2026-07-24
 
 ### Added
